@@ -128,16 +128,18 @@ def build_preamble(
 def main():
     p = argparse.ArgumentParser(description="Submit full zebrafish pipeline chain to Quest")
     p.add_argument("--run_name", required=True, help="Human-readable run name (e.g. run2_grcz12_longorf)")
-    p.add_argument("--quest_host", default="login.quest.northwestern.edu")
-    p.add_argument("--quest_user", default="iis1026")
-    p.add_argument("--quest_account", default="p52853")
+    p.add_argument("--quest_host", default="login.quest.northwestern.edu",
+                   help="Slurm login host (defaults to Northwestern Quest)")
+    p.add_argument("--quest_user", required=True, help="SSH username on the Slurm host (e.g. your NetID)")
+    p.add_argument("--quest_account", required=True, help="Slurm --account value")
     p.add_argument("--quest_partition", default="short")
     p.add_argument("--stage2_partition", default="",
                    help="Partition for Stage 2; defaults to --quest_partition.")
     p.add_argument("--stage3_partition", default="",
                    help="Partition for Stage 3; defaults to --quest_partition.")
-    p.add_argument("--remote_repo_root", default="/projects/p52853/iis1026/Leaf_Cutter")
-    p.add_argument("--mail_user", default="iis1026@u.northwestern.edu")
+    p.add_argument("--remote_repo_root", required=True,
+                   help="Absolute path on the cluster where Leaf_Cutter is checked out (e.g. /projects/<account>/<user>/Leaf_Cutter)")
+    p.add_argument("--mail_user", default="", help="Slurm --mail-user (optional)")
 
     p.add_argument("--projects", default="PRJEB7244", help="Comma-separated ENA project IDs")
     p.add_argument("--max_runs", type=int, default=0)

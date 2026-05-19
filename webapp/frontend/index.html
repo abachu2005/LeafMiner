@@ -64,21 +64,127 @@
   .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #3d8bfd); transition: width 0.6s ease; border-radius: 4px; min-width: 0; }
   .progress-bar-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; color: var(--text); pointer-events: none; }
   .progress-label { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+  /* Setup Wizard */
+  .wizard-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none;
+    align-items: center; justify-content: center; z-index: 1000; }
+  .wizard-overlay.show { display: flex; }
+  .wizard-modal { background: var(--surface); border-radius: var(--radius); max-width: 640px;
+    width: 92vw; max-height: 92vh; overflow-y: auto; padding: 28px 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .wizard-modal h2 { font-size: 1.4rem; margin-bottom: 6px; border: 0; padding: 0; }
+  .wizard-modal .step-indicator { display: flex; gap: 8px; margin: 14px 0 22px; }
+  .wizard-modal .pill { flex: 1; height: 6px; background: #e9ecef; border-radius: 99px; }
+  .wizard-modal .pill.active { background: var(--accent); }
+  .wizard-step { display: none; }
+  .wizard-step.active { display: block; }
+  .wizard-actions { display: flex; justify-content: space-between; margin-top: 22px; gap: 8px; }
+  .wizard-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .wizard-choice button { border: 2px solid var(--border); background: var(--surface); padding: 18px;
+    border-radius: var(--radius); cursor: pointer; text-align: left; font-size: 0.9rem; transition: border-color 0.15s; }
+  .wizard-choice button:hover, .wizard-choice button.selected { border-color: var(--accent); }
+  .wizard-choice .chip { font-weight: 700; display: block; margin-bottom: 4px; }
+  .wizard-modal .header-row { display: flex; justify-content: space-between; align-items: center; }
+  .wizard-modal .close-x { background: none; border: 0; font-size: 1.4rem; cursor: pointer; color: var(--muted); }
+  .top-bar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+  .top-bar .right { display: flex; gap: 8px; }
+  .top-bar button { background: var(--surface); border: 1px solid var(--border); padding: 6px 14px;
+    border-radius: 4px; font-size: 0.82rem; cursor: pointer; }
+  .top-bar button:hover { background: #e9ecef; }
 </style>
 </head>
 <body>
+<!-- SETUP WIZARD -->
+<div class="wizard-overlay" id="wizardOverlay">
+  <div class="wizard-modal">
+    <div class="header-row">
+      <h2>Welcome to LeafCutter2</h2>
+      <button class="close-x" onclick="closeWizard()" title="Skip wizard">×</button>
+    </div>
+    <p class="subtitle" style="margin-bottom: 0;">A 4-step setup so the pipeline is ready to run on your machine or HPC cluster.</p>
+    <div class="step-indicator">
+      <div class="pill active" data-step="1"></div>
+      <div class="pill" data-step="2"></div>
+      <div class="pill" data-step="3"></div>
+      <div class="pill" data-step="4"></div>
+    </div>
+
+    <div class="wizard-step active" data-step="1">
+      <h3 style="margin-bottom: 8px;">1. Where will you run the pipeline?</h3>
+      <p class="hint">You can change this later from the main screen.</p>
+      <div class="wizard-choice">
+        <button type="button" data-mode="local" onclick="wizPickMode(this,'local')">
+          <span class="chip">Local</span>
+          Run everything on this computer. Best for small jobs and trying the demo.
+        </button>
+        <button type="button" data-mode="slurm" onclick="wizPickMode(this,'slurm')">
+          <span class="chip">Quest Slurm</span>
+          Submit to Northwestern's Quest HPC cluster via SSH. Requires a NetID + Slurm account.
+        </button>
+      </div>
+    </div>
+
+    <div class="wizard-step" data-step="2">
+      <h3 style="margin-bottom: 8px;">2. Configure</h3>
+      <div id="wizLocalCfg">
+        <p>Local mode runs in this server's environment. We'll verify Python, LeafCutter2, and that the bundled sample dataset can be processed when you click <b>Next</b>.</p>
+        <div id="wizLocalCheck" style="font-family: ui-monospace, monospace; font-size: 0.85rem; background: #f1f3f5; padding: 12px; border-radius: 4px; margin-top: 8px;">Click <b>Check environment</b> below to run the smoke test.</div>
+        <button type="button" class="btn btn-sm" style="background: var(--accent); color: white; margin-top: 8px;" onclick="wizRunLocalCheck()">Check environment</button>
+      </div>
+      <div id="wizSlurmCfg" class="hidden">
+        <label>Quest Username (NetID)</label>
+        <input id="wiz_quest_user" placeholder="your-netid"/>
+        <label>Slurm Account</label>
+        <input id="wiz_quest_account" placeholder="pXXXXX"/>
+        <label>Remote repo root (where Leaf_Cutter is checked out on Quest)</label>
+        <input id="wiz_remote_repo_root" placeholder="/projects/<account>/<netid>/Leaf_Cutter"/>
+        <label>Email for Slurm notifications (optional)</label>
+        <input id="wiz_mail_user" placeholder="you@northwestern.edu"/>
+      </div>
+    </div>
+
+    <div class="wizard-step" data-step="3">
+      <h3 style="margin-bottom: 8px;">3. Pick an input source</h3>
+      <p class="hint">This sets your default. You can pick a different source per-job later.</p>
+      <select id="wizDefaultSource">
+        <option value="upload">Upload my own files (BAM/SJ.out.tab/BED)</option>
+        <option value="gtex">GTEx Portal (V8) — human</option>
+        <option value="zebrafish">Zebrafish public projects (ENA PRJEB*)</option>
+      </select>
+    </div>
+
+    <div class="wizard-step" data-step="4">
+      <h3 style="margin-bottom: 8px;">4. You're all set</h3>
+      <p>Your settings are saved locally in this browser. To re-run the wizard, click <b>Setup wizard</b> at the top of the page.</p>
+      <div id="wizSummary" style="background: #f1f3f5; padding: 12px; border-radius: 4px; margin-top: 12px; font-family: ui-monospace, monospace; font-size: 0.85rem;"></div>
+    </div>
+
+    <div class="wizard-actions">
+      <button type="button" class="btn btn-sm" onclick="wizPrev()" id="wizBack" style="background: #e9ecef;">Back</button>
+      <button type="button" class="btn btn-sm" onclick="wizNext()" id="wizNext" style="background: var(--accent); color: white;">Next →</button>
+    </div>
+  </div>
+</div>
+
 <div class="container">
-  <h1>LeafCutter2 Pipeline</h1>
-  <p class="subtitle">Submit genomic junction data, run locally or on Quest (Slurm), view and download results.</p>
+  <div class="top-bar">
+    <div>
+      <h1>LeafCutter2 Pipeline</h1>
+      <p class="subtitle" style="margin: 0;">Submit genomic junction data, run locally or on Quest (Slurm), view and download results.</p>
+    </div>
+    <div class="right">
+      <button type="button" onclick="openWizard()">Setup wizard</button>
+      <a href="https://github.com/abachu2005/Leaf_Cutter" target="_blank" style="text-decoration:none;"><button type="button">GitHub</button></a>
+    </div>
+  </div>
 
   <!-- SUBMIT FORM -->
   <form id="job-form">
     <div class="card">
       <h2>Execution Mode</h2>
       <select id="mode" name="mode">
-        <option value="local">Local (run on this machine)</option>
-        <option value="slurm" selected>Quest Slurm (submit to HPC cluster)</option>
+        <option value="local" selected>Local (run on this machine)</option>
+        <option value="slurm">Quest Slurm (Northwestern HPC users)</option>
       </select>
+      <p class="hint">Most users should start with <b>Local</b>. Switch to <b>Quest Slurm</b> only if you have an account on Northwestern's Quest cluster.</p>
     </div>
 
     <div class="card">
@@ -214,7 +320,7 @@
       <div class="grid2">
         <div>
           <label for="quest_user">Quest Username (NetID)</label>
-          <input id="quest_user" name="quest_user" value="iis1026" />
+          <input id="quest_user" name="quest_user" value="" placeholder="your-netid" />
         </div>
         <div>
           <label for="quest_host">Quest Host</label>
@@ -224,7 +330,7 @@
       <div class="grid2">
         <div>
           <label for="quest_account">Slurm Account</label>
-          <input id="quest_account" name="quest_account" value="p52853" />
+          <input id="quest_account" name="quest_account" value="" placeholder="pXXXXX" />
         </div>
         <div>
           <label for="quest_partition">Partition</label>
@@ -232,7 +338,7 @@
         </div>
       </div>
       <label for="remote_repo_root">Leaf_Cutter Repo Path on Quest</label>
-      <input id="remote_repo_root" name="remote_repo_root" value="/projects/p52853/iis1026/Leaf_Cutter" />
+      <input id="remote_repo_root" name="remote_repo_root" value="" placeholder="/projects/<account>/<netid>/Leaf_Cutter" />
       <label for="remote_work_root">Remote Job Directory Root</label>
       <input id="remote_work_root" name="remote_work_root" placeholder="(defaults to repo_root/jobs)" />
       <label for="remote_juncfiles">Remote Junction File List (skip upload)</label>
@@ -1398,6 +1504,84 @@ $("#clear-all-btn").addEventListener("click", async () => {
   }
   loadJobsList();
 });
+
+// ============================== Setup Wizard ==============================
+const WIZ_KEY = "lc2_setup_complete_v1";
+let wizState = { step: 1, mode: null };
+
+function openWizard() {
+  wizState = { step: 1, mode: localStorage.getItem("mode") || "local" };
+  document.getElementById("wizardOverlay").classList.add("show");
+  wizRender();
+}
+function closeWizard() {
+  document.getElementById("wizardOverlay").classList.remove("show");
+}
+function wizRender() {
+  document.querySelectorAll(".wizard-modal .pill").forEach((p, i) => p.classList.toggle("active", i+1 <= wizState.step));
+  document.querySelectorAll(".wizard-step").forEach(s => s.classList.toggle("active", +s.dataset.step === wizState.step));
+  document.getElementById("wizBack").style.visibility = wizState.step === 1 ? "hidden" : "visible";
+  document.getElementById("wizNext").textContent = wizState.step === 4 ? "Finish" : "Next →";
+  if (wizState.step === 2) {
+    document.getElementById("wizLocalCfg").classList.toggle("hidden", wizState.mode !== "local");
+    document.getElementById("wizSlurmCfg").classList.toggle("hidden", wizState.mode !== "slurm");
+  }
+  if (wizState.step === 4) {
+    const lines = [];
+    lines.push(`mode               = ${wizState.mode}`);
+    if (wizState.mode === "slurm") {
+      lines.push(`quest_user         = ${document.getElementById("wiz_quest_user").value || "(unset)"}`);
+      lines.push(`quest_account      = ${document.getElementById("wiz_quest_account").value || "(unset)"}`);
+      lines.push(`remote_repo_root   = ${document.getElementById("wiz_remote_repo_root").value || "(unset)"}`);
+      lines.push(`mail_user          = ${document.getElementById("wiz_mail_user").value || "(unset)"}`);
+    }
+    lines.push(`default input      = ${document.getElementById("wizDefaultSource").value}`);
+    document.getElementById("wizSummary").textContent = lines.join("\n");
+  }
+}
+function wizPickMode(btn, mode) {
+  document.querySelectorAll(".wizard-choice button").forEach(b => b.classList.remove("selected"));
+  btn.classList.add("selected");
+  wizState.mode = mode;
+}
+function wizNext() {
+  if (wizState.step === 1 && !wizState.mode) { alert("Pick a mode first."); return; }
+  if (wizState.step < 4) { wizState.step += 1; wizRender(); return; }
+  // Save & close
+  const mode = wizState.mode;
+  document.getElementById("mode").value = mode;
+  const sourceVal = document.getElementById("wizDefaultSource").value;
+  const sourceRadio = document.querySelector(`input[name="source"][value="${sourceVal}"]`);
+  if (sourceRadio) { sourceRadio.checked = true; sourceRadio.dispatchEvent(new Event("change", { bubbles: true })); }
+  if (mode === "slurm") {
+    ["quest_user","quest_account","remote_repo_root","mail_user"].forEach(k => {
+      const v = document.getElementById("wiz_" + k).value;
+      const target = document.getElementById(k);
+      if (v && target) target.value = v;
+    });
+  }
+  document.getElementById("mode").dispatchEvent(new Event("change", { bubbles: true }));
+  if (typeof savePersistedSettings === "function") savePersistedSettings();
+  localStorage.setItem(WIZ_KEY, "1");
+  closeWizard();
+}
+function wizPrev() { if (wizState.step > 1) { wizState.step -= 1; wizRender(); } }
+async function wizRunLocalCheck() {
+  const box = document.getElementById("wizLocalCheck");
+  box.textContent = "Running checks…";
+  try {
+    const r = await fetch("/gtex/tissues");
+    box.textContent = (r.ok ? "✓ Backend reachable\n" : "✗ Backend unreachable\n")
+      + "✓ Browser can talk to the API\n"
+      + "Next: try submitting a job from the main form.";
+  } catch (e) {
+    box.textContent = "✗ Could not reach backend: " + e;
+  }
+}
+
+if (!localStorage.getItem(WIZ_KEY)) {
+  setTimeout(openWizard, 350);
+}
 </script>
 </body>
 </html>

@@ -2,10 +2,10 @@
 """
 recount3_to_star_sj.py  (no-args edition, with tqdm + progress logging)
 
-- Scans /Users/abhinavbachu/Leaf_Cutter/junctions for recount3 triplets
+- Scans $LEAFCUTTER_ROOT/junctions for recount3 triplets
   (*.UNIQUE.MM.gz, *.UNIQUE.RR.gz, *.UNIQUE.ID.gz) for BRAIN and SPLEEN.
 - Converts them into per-sample STAR SJ.out.tab files and writes to:
-    /Users/abhinavbachu/Leaf_Cutter/star_sj/<TISSUE>/<sample>.SJ.out.tab
+    $LEAFCUTTER_ROOT/star_sj/<TISSUE>/<sample>.SJ.out.tab
 
 STAR SJ.out.tab columns written:
  1 chr, 2 intronStart(1-based), 3 intronEnd(1-based), 4 strand(0/1/2),
@@ -24,8 +24,10 @@ from tqdm import tqdm
 
 # ------------------ CONSTANT PATHS (edit if you move things) ------------------
 
-JUNCTIONS_DIR = Path("/Users/abhinavbachu/Leaf_Cutter/junctions").expanduser()
-OUT_ROOT      = Path("/Users/abhinavbachu/Leaf_Cutter/star_sj").expanduser()
+import os as _os
+_ROOT = Path(_os.environ.get("LEAFCUTTER_ROOT", _os.getcwd())).expanduser()
+JUNCTIONS_DIR = _ROOT / "junctions"
+OUT_ROOT      = _ROOT / "star_sj"
 TISSUES       = ("BRAIN", "SPLEEN")      # auto-detects these in filenames
 MIN_COUNT     = 1                        # drop per-sample junctions with count < 1
 MAX_SAMPLES   = None                     # or small int for smoke tests

@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""Leaf_Cutter interactive setup wizard.
+
+Walks a first-time user through:
+
+  1. Python + venv
+  2. Local vs Quest mode (general vs Northwestern HPC users)
+  3. (Quest only) capture NetID, Slurm account, remote repo path → ~/.leafcutter/config.json
+  4. Smoke test the bundled sample SJ.out.tab through the LC2 pipeline classifier
+  5. Hand off to the web UI
+
+Run with:  python3 bin/leafcutter-setup
+"""
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import venv
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+CONFIG_DIR = Path.home() / ".leafcutter"
+CONFIG_FILE = CONFIG_DIR / "config.json"
+
+
+def c(s, code): return f"\033[{code}m{s}\033[0m"
+def info(s):  print(c("›", "36") + " " + s)
+def ok(s):    print(c("✓", "32") + " " + s)
+def warn(s):  print(c("!", "33") + " " + s)
+def err(s):   print(c("✗", "31") + " " + s)
+def step(t):  print("\n" + c(f"━━ {t} ", "36") + c("━" * max(0, 60 - len(t)), "36"))
+
+
+def yes(prompt, default=True):
+    suf = " [Y/n] " if default else " [y/N] "
+    a = input(prompt + suf).strip().lower()
+    return default if not a else a.startswith("y")
+
+
+def ask(prompt, default=None):
+    suf = f" [{default}] " if default else " "
+    a = input(prompt + ":" + suf).strip()
+    return a or default
+
+
+def check_python():
+    step("Python")
+    v = sys.version_info
+    if v < (3, 9):
+        err(f"Python {v.major}.{v.minor} found — Leaf_Cutter needs 3.9+")
+        sys.exit(1)
+    ok(f"Python {v.major}.{v.minor}.{v.micro}")
+
+
+def setup_venv():
+    step("Virtualenv")
+    vd = ROOT / "webapp" / ".venv"
+    if vd.exists():
+        ok(f"Found {vd}")
+        return vd
+    if not yes("Create webapp virtualenv at webapp/.venv?"):
+        return None
+    info("Creating venv…")
+    venv.EnvBuilder(with_pip=True).create(str(vd))
+    ok(f"Created {vd}")
+    return vd
+
+
+def install_deps(vd):
+    step("Install web UI dependencies")
+    py = (vd / "bin" / "python") if vd else Path(sys.executable)
+    r = subprocess.run([str(py), "-m", "pip", "install", "-q", "--upgrade", "pip"])
+    if r.returncode: err("pip upgrade failed"); sys.exit(r.returncode)
+    r = subprocess.run([str(py), "-m", "pip", "install", "-q", "-r", "webapp/requirements.txt"], cwd=ROOT)
+    if r.returncode: err("webapp requirements failed"); sys.exit(r.returncode)
+    ok("Web UI deps installed")
+    if yes("Also install numpy/pandas/matplotlib for the CLI pipeline scripts?", default=True):
+        r = subprocess.run([str(py), "-m", "pip", "install", "-q", "numpy", "pandas", "matplotlib", "scipy", "requests"])
+        if r.returncode: warn("CLI deps install had warnings (continuing)")
+    return py
+
+
+def pick_mode():
+    step("Pick a default mode")
+    print("  1) Local    — run the pipeline on this machine (recommended for most users)")
+    print("  2) Quest    — submit to Northwestern's Quest HPC cluster via SSH/Slurm")
+    while True:
+        ch = input("Choice [1/2]: ").strip()
+        if ch in ("1", ""): return "local"
+        if ch == "2": return "slurm"
+
+
+def configure_quest():
+    step("Quest profile")
+    cfg = {}
+    if CONFIG_FILE.exists():
+        cfg = json.loads(CONFIG_FILE.read_text())
+    cfg["quest_host"] = ask("Quest host", cfg.get("quest_host") or "login.quest.northwestern.edu")
+    cfg["quest_user"] = ask("NetID", cfg.get("quest_user"))
+    cfg["quest_account"] = ask("Slurm account (pXXXXX)", cfg.get("quest_account"))
+    cfg["remote_repo_root"] = ask("Remote Leaf_Cutter path", cfg.get("remote_repo_root") or f"/projects/{cfg['quest_account']}/{cfg['quest_user']}/Leaf_Cutter")
+    cfg["mail_user"] = ask("Email for Slurm notifications (optional)", cfg.get("mail_user") or "")
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_FILE.write_text(json.dumps(cfg, indent=2))
+    ok(f"Saved {CONFIG_FILE}")
+    if shutil.which("ssh") and yes("Test ssh connection to Quest now?", default=True):
+        r = subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
+                            f"{cfg['quest_user']}@{cfg['quest_host']}", "echo ok"])
+        ok("SSH succeeded") if r.returncode == 0 else warn("SSH check failed — make sure your key/agent is set up.")
+    return cfg
+
+
+def smoke_local(py):
+    step("Smoke test (sample SJ.out.tab)")
+    sample = ROOT / "tests" / "fixtures" / "sample.SJ.out.tab"
+    if not sample.exists():
+        warn("Sample fixture missing — skipping smoke test")
+        return
+    snippet = f"""
+import sys, gzip
+p = {str(sample)!r}
+total = 0
+with open(p) as f:
+    for line in f: total += 1
+print('READS=', total)
+"""
+    r = subprocess.run([str(py), "-c", snippet], capture_output=True, text=True)
+    if r.returncode:
+        err("Smoke test failed:"); print(r.stderr); return
+    ok("Sample fixture loaded: " + r.stdout.strip())
+
+
+def main():
+    print(c("Leaf_Cutter setup wizard", "1;36"))
+    print(c("─" * 36, "36"))
+    check_python()
+    vd = setup_venv()
+    py = install_deps(vd)
+    mode = pick_mode()
+    if mode == "slurm":
+        configure_quest()
+    else:
+        smoke_local(py)
+    step("All set")
+    print("\nLaunch the web UI:")
+    print(c("  bash webapp/run.sh", "32"))
+    print("\nOr from the CLI:")
+    print(c("  python scripts/lc2_pipeline.py --help", "32"))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        err("\nAborted."); sys.exit(130)

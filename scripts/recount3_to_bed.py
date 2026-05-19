@@ -5,14 +5,14 @@ recount3_to_bed.py  (no-args, with tqdm + robust RR parsing + progress logs)
 Convert recount3 junction triplets (MM/RR/ID) directly into per-sample BED6 files
 compatible with LeafCutter/LeafCutter2—no STAR step.
 
-Inputs (auto-discovered by tissue in /Users/abhinavbachu/Leaf_Cutter/junctions):
+Inputs (auto-discovered by tissue in $LEAFCUTTER_ROOT/junctions):
   *.UNIQUE.MM.gz  (Matrix Market, rows=junctions, cols=samples)
   *.UNIQUE.RR.gz  (rowRanges: coordinates + strand)
   *.UNIQUE.ID.gz  (sample IDs, one per line)
 
 Outputs:
-  /Users/abhinavbachu/Leaf_Cutter/junctions_bed/<TISSUE>/<sample>.juncs.bed
-  /Users/abhinavbachu/Leaf_Cutter/out/junction_files_<TISSUE>.txt  (list of BEDs)
+  $LEAFCUTTER_ROOT/junctions_bed/<TISSUE>/<sample>.juncs.bed
+  $LEAFCUTTER_ROOT/out/junction_files_<TISSUE>.txt  (list of BEDs)
 
 BED6 columns written:
   chrom  start(0-based)  end  name(junction_id)  score(count)  strand(+/-/.)
@@ -28,8 +28,9 @@ import gzip, re, sys
 import pandas as pd
 from tqdm import tqdm
 
-# ---------- Fixed paths for your project ----------
-ROOT           = Path("/Users/abhinavbachu/Leaf_Cutter").expanduser()
+# ---------- Paths (override with LEAFCUTTER_ROOT or --root) ----------
+import os as _os
+ROOT           = Path(_os.environ.get("LEAFCUTTER_ROOT", _os.getcwd())).expanduser()
 JUNCTIONS_DIR  = ROOT / "junctions"
 BED_ROOT       = ROOT / "junctions_bed"
 OUT_DIR        = ROOT / "out"

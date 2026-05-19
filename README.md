@@ -6,6 +6,24 @@
 > tested candidate list, all driven from a browser tab or a single CLI
 > command.
 
+![status: ready](https://img.shields.io/badge/status-ready-brightgreen) ![python: 3.9+](https://img.shields.io/badge/python-3.9%2B-blue) ![license: MIT](https://img.shields.io/badge/license-MIT-lightgrey)
+
+## 🚀 Quick start
+
+```bash
+git clone https://github.com/abachu2005/Leaf_Cutter.git
+cd Leaf_Cutter
+python3 bin/leafcutter-setup   # interactive: picks local vs Quest, sets up venv, smoke-tests
+bash webapp/run.sh             # open http://127.0.0.1:8000
+```
+
+On first visit the browser UI launches a 4-step **Setup Wizard** (mode → config → input source → finish). The CLI wizard `bin/leafcutter-setup` does the same plus a smoke test against the bundled `tests/fixtures/sample.SJ.out.tab`.
+
+**Two ways to run the pipeline:**
+
+- **Local** (default, no HPC needed) — runs on your machine, great for small jobs, GTEx tissues, or trying the example.
+- **Quest Slurm** (Northwestern users) — submits stages as Slurm jobs to Quest via SSH; the wizard captures your NetID, Slurm account, and remote repo path.
+
 This repository packages every step required to go from public short-read
 RNA-seq data to a developmentally-resolved poison-exon (PE) catalog:
 
@@ -370,7 +388,7 @@ otherwise required.
 ### 6.1 Local (single machine)
 
 ```bash
-git clone https://github.com/<your-org>/Leaf_Cutter.git
+git clone https://github.com/abachu2005/Leaf_Cutter.git
 cd Leaf_Cutter
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r webapp/requirements.txt
