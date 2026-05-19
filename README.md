@@ -6,7 +6,7 @@
 > tested candidate list, all driven from a browser tab or a single CLI
 > command.
 
-![status: ready](https://img.shields.io/badge/status-ready-brightgreen) ![python: 3.9+](https://img.shields.io/badge/python-3.9%2B-blue) ![license: MIT](https://img.shields.io/badge/license-MIT-lightgrey)
+![status: ready](https://img.shields.io/badge/status-ready-brightgreen) ![python: 3.9+](https://img.shields.io/badge/python-3.9%2B-blue) ![license: MIT](https://img.shields.io/badge/license-MIT-lightgrey) [![DOI](https://zenodo.org/badge/1170208699.svg)](https://zenodo.org/badge/latestdoi/1170208699) [![CI](https://github.com/abachu2005/Leaf_Cutter/actions/workflows/ci.yml/badge.svg)](https://github.com/abachu2005/Leaf_Cutter/actions/workflows/ci.yml)
 
 ## 🚀 Quick start
 
