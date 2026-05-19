@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "leafcutter2-pipeline"
-version = "1.0.0"
+version = "1.0.1"
 description = "Reproducible poison-exon discovery pipeline for zebrafish (and other organisms) wrapping LeafCutter2."
 readme = "README.md"
 license = { file = "LICENSE" }
