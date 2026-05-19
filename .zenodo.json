@@ -1,0 +1,29 @@
+{
+  "title": "Leaf_Cutter: a reproducible poison-exon discovery pipeline for zebrafish",
+  "description": "Leaf_Cutter is an open-source, end-to-end pipeline for discovering and quantifying unproductive splicing and poison exons in Danio rerio RNA-seq data. It wraps LeafCutter2 with developmentally-resolved PE discovery, POISEN long-read validation, GTEx integration, and a FastAPI + vanilla-JS web app with optional Slurm submission.",
+  "license": "MIT",
+  "upload_type": "software",
+  "access_right": "open",
+  "keywords": [
+    "bioinformatics",
+    "splicing",
+    "poison-exons",
+    "zebrafish",
+    "leafcutter",
+    "nonsense-mediated-decay",
+    "RNA-seq"
+  ],
+  "creators": [
+    {
+      "name": "Bachu, Abhinav",
+      "affiliation": "Northwestern University"
+    }
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/abachu2005/Leaf_Cutter",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}
