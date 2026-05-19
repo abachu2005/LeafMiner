@@ -31,8 +31,13 @@ def tx_by_gene(gtf_annot,
             else:
                 transcripts_by_gene[dic['gene_name']] = transcripts_by_gene[dic['gene_name']] | {dic['transcript_name']: []}
         if dic['type'] == 'CDS':
-            insort(transcripts_by_gene[dic['gene_name']][dic['transcript_name']], int((dic['start'])))
-            insort(transcripts_by_gene[dic['gene_name']][dic['transcript_name']], int((dic['end'])))
+            gn, tn = dic['gene_name'], dic['transcript_name']
+            if gn not in transcripts_by_gene:
+                transcripts_by_gene[gn] = {tn: []}
+            elif tn not in transcripts_by_gene[gn]:
+                transcripts_by_gene[gn][tn] = []
+            insort(transcripts_by_gene[gn][tn], int((dic['start'])))
+            insort(transcripts_by_gene[gn][tn], int((dic['end'])))
     return transcripts_by_gene
 
 def NMD_tx(gtf_annot, 
@@ -51,8 +56,13 @@ def NMD_tx(gtf_annot,
             else:
                 nmd_tx_by_gene[dic['gene_name']] = nmd_tx_by_gene[dic['gene_name']] | {dic['transcript_name']: []}
         if dic['type'] == 'CDS':
-            insort(nmd_tx_by_gene[dic['gene_name']][dic['transcript_name']], int((dic['start'])))
-            insort(nmd_tx_by_gene[dic['gene_name']][dic['transcript_name']], int((dic['end'])))
+            gn, tn = dic['gene_name'], dic['transcript_name']
+            if gn not in nmd_tx_by_gene:
+                nmd_tx_by_gene[gn] = {tn: []}
+            elif tn not in nmd_tx_by_gene[gn]:
+                nmd_tx_by_gene[gn][tn] = []
+            insort(nmd_tx_by_gene[gn][tn], int((dic['start'])))
+            insort(nmd_tx_by_gene[gn][tn], int((dic['end'])))
     return nmd_tx_by_gene
 
 def ptc_pos_from_prot(prot, sub):
@@ -698,15 +708,16 @@ def parse_gtf(gtf: str,
             else:
                 dic[fields[i]] = ln[i]
 
-        # add 4 additional fields, parsed from info field
-        for ks in ['gene_name', "transcript_type","transcript_name", "gene_type"]:
-            info_fields = [{x.split()[0]: x.split()[1].replace('"', '')} 
-                          for x in dic['info'].split(';') if len(x.split()) > 1]
-            info_fields = {k: v for d in info_fields for k, v in d.items()}
-            try: 
-                dic[ks] = info_fields[ks]
-            except:
-                dic[ks] = None # if line is a gene, then wont have transcript info
+        # add 4 additional fields, parsed from info field (parse once)
+        info_fields = {}
+        for x in dic['info'].split(';'):
+            parts = x.strip().split(None, 1)
+            if len(parts) == 2:
+                info_fields[parts[0]] = parts[1].strip().strip('"')
+        for ks in ['gene_name', "transcript_type", "transcript_name", "gene_type"]:
+            dic[ks] = info_fields.get(ks)
+        if dic['gene_name'] is None:
+            dic['gene_name'] = dic.get('transcript_name') or info_fields.get('gene_id', 'unknown')
         yield dic
          
 
@@ -772,7 +783,7 @@ def parse_annotation(gtf_annot: str,
             genes_info[tname]['utrs'].add((start,end))
 
     for gene in genes_info: # this is actually transcript level!!! (transcript_name, gene_name)
-        gene_name = gene[1]
+        gene_name = gene[1] if gene[1] is not None else gene[0]
         exons = genes_info[gene]['exons']
         exons.sort()
 
@@ -903,9 +914,11 @@ def ClassifySpliceJunction(
             dic_junc[(chrom,strand)] = []
         dic_junc[(chrom,strand)].append((int(start), int(end)))
 
-    #NOTE: convert start, end coordinates in dic_junc to (leafcutter1) 1-based from 0 based (like BED)
+    # LC2 clustering writes intron end = BED_end - 1.  The GTF annotation
+    # stores introns as (exon_i_end, exon_{i+1}_start), so the end coordinate
+    # needs +2 (not +1) to align with the annotation convention.
     for chrom, strand in dic_junc:
-        dic_junc[(chrom, strand)] = [(x[0] , x[1] + 1) for x in dic_junc[(chrom, strand)]]
+        dic_junc[(chrom, strand)] = [(x[0] , x[1] + 2) for x in dic_junc[(chrom, strand)]]
 
     sys.stdout.write(" done!\n")
     if verbose:
@@ -977,21 +990,30 @@ def ClassifySpliceJunction(
 
     gene_juncs = {}
     for chrom,strand in dic_junc:
-        if (chrom,strand) not in g_coords: 
-            sys.stderr.write(f"Could not find {chrom} ({strand}) in annotations...\n")
-            continue
         juncs = [(x,x) for x in dic_junc[(chrom,strand)]]
         juncs.sort()
 
-        coords = g_coords[(chrom,strand)]
-        coords.sort()
-        
-        # save junctions that overlapping a gene in gene_juncs dictionary: (gene_name, chrom, strand) : [junctions]
-        for junc, geneinfo in get_overlap_stream(juncs,coords): 
-            info = (geneinfo[1], chrom,strand)
-            if info not in gene_juncs:
-                gene_juncs[info] = []
-            gene_juncs[info].append(junc[0])
+        # For unstranded junctions (strand '.'), try both '+' and '-' gene annotations
+        strands_to_try = [strand]
+        if strand == '.':
+            strands_to_try = ['+', '-']
+
+        matched = False
+        for gene_strand in strands_to_try:
+            if (chrom, gene_strand) not in g_coords:
+                continue
+            matched = True
+            coords = g_coords[(chrom, gene_strand)]
+            coords.sort()
+
+            for junc, geneinfo in get_overlap_stream(juncs, coords):
+                info = (geneinfo[1], chrom, gene_strand)
+                if info not in gene_juncs:
+                    gene_juncs[info] = []
+                gene_juncs[info].append(junc[0])
+
+        if not matched:
+            sys.stderr.write(f"Could not find {chrom} ({strand}) in annotations...\n")
 
     fout = open(f"{rundir}/clustering/{outprefix}_junction_classifications.txt",'w')
     fout.write("\t".join(["Gene_name","Intron_coord","Strand","Annot","Coding","UTR","GencodePC"])+'\n')
@@ -1002,119 +1024,122 @@ def ClassifySpliceJunction(
     nout = open(f"{rundir}/clustering/{outprefix}_nuc_rule_distances.txt",'w')
     nout.write("\t".join(["Gene_name","Intron_coord","ejc_distance"])+'\n')
 
-    for gene_name, chrom, strand in gene_juncs:
+    try:
+        for gene_name, chrom, strand in gene_juncs:
 
-        extra_utr_rule = {'junction': [], 'annotated':[], 'coding': [], 'utr': [], 'gencode': []}
+            extra_utr_rule = {'junction': [], 'annotated':[], 'coding': [], 'utr': [], 'gencode': []}
 
-        sys.stdout.write(f"Processing {gene_name} ({chrom}:{strand})\n")
-        
-        query_juncs = gene_juncs[(gene_name,chrom,strand)] # from LeafCutter perind file
-        if gene_name not in g_info: continue
-        junctions = g_info[gene_name]['junctions'] # from annotation
-        
-        # classify all junctions in gene
-        junctions = list(junctions.union(query_juncs))
+            sys.stdout.write(f"Processing {gene_name} ({chrom}:{strand})\n")
+            
+            query_juncs = gene_juncs[(gene_name,chrom,strand)] # from LeafCutter perind file
+            if gene_name not in g_info: continue
+            junctions = g_info[gene_name]['junctions'] # from annotation
+            
+            # classify all junctions in gene
+            junctions = list(junctions.union(query_juncs))
 
-        start_codons = g_info[gene_name]['start_codon'] 
-        stop_codons = g_info[gene_name]['stop_codon']
+            start_codons = g_info[gene_name]['start_codon'] 
+            stop_codons = g_info[gene_name]['stop_codon']
 
-        if verbose:
-            sys.stdout.write(f"LeafCutter junctions ({len(query_juncs)}) All junctions ({len(junctions)}) Start codons ({len(start_codons)}) Stop codons ({len(stop_codons)}) \n")
+            if verbose:
+                sys.stdout.write(f"LeafCutter junctions ({len(query_juncs)}) All junctions ({len(junctions)}) Start codons ({len(start_codons)}) Stop codons ({len(stop_codons)}) \n")
 
-        
-        if len(junctions) <= max_juncs:
-            try:
-                junc_pass, junc_fail = solve_NMD(chrom,strand,junctions, 
-                                                start_codons, stop_codons, 
-                                                gene_name, fa)
-                junc_fail = set(junc_fail.keys())
-                junc_pass = set(junc_pass.keys())
-            except:
-                if verbose: sys.stdout.write(f"Skipping... seq fetching problem\n")
-                continue
-        else:
-            if verbose: sys.stdout.write(f"Skipping... Too many juncs (> {str(max_juncs)})\n")
-            junc_pass = set()
-            #Don't want to run all these junctions through the extra rules
-            junc_fail = set()
-
-
-        failing_juncs = junc_fail.difference(junc_pass)
-
-
-        old_junc_pass = junc_pass
-        junc_pass = {}
-        junc_pass['normal'] = old_junc_pass
-        ptc_junctions, ptc_distances, ptc_exon_lens = long_exon_finder(failing_juncs, gene_name, transcripts_by_gene, strand, chrom, fa)
-        exons_before, exons_after = many_junctions(failing_juncs, gene_name, transcripts_by_gene, strand, chrom, fa)
-        junc_pass['nuc_rule'], ejc_distances = nucleotide_rule(failing_juncs, gene_name, transcripts_by_gene, strand, chrom, nmd_tx_by_gene, fa)
-        for j in junctions:
-
-            bool_pass = j in junc_pass['normal'] 
-            gencode = j in g_info[gene_name]['pcjunctions']
-            bool_fail = j in failing_juncs
-
-            if bool_fail or bool_pass:
-                tested = True
+            
+            if len(junctions) <= max_juncs:
+                try:
+                    junc_pass, junc_fail = solve_NMD(chrom,strand,junctions, 
+                                                    start_codons, stop_codons, 
+                                                    gene_name, fa)
+                    junc_fail = set(junc_fail.keys())
+                    junc_pass = set(junc_pass.keys())
+                except Exception:
+                    if verbose: sys.stdout.write(f"Skipping... seq fetching problem\n")
+                    continue
             else:
-                tested = False
-            annotated = j in g_info[gene_name]['junctions']
-            
-            if len(start_codons) != 0 and len(stop_codons) != 0:
-                utr = check_utrs(j, strand, start_codons, stop_codons)
-            else:
-                utr = False
+                if verbose: sys.stdout.write(f"Skipping... Too many juncs (> {str(max_juncs)})\n")
+                junc_pass = set()
+                #Don't want to run all these junctions through the extra rules
+                junc_fail = set()
 
-            #if not bool_pass and annotated:
-            #print("%s %s %s junction: %s tested: %s utr: %s coding: %s annotated: %s "%(chrom, strand, gene_name, j, tested,utr, bool_pass, annotated))
-            
-            extra_utr_rule['junction'].append(j)
-            extra_utr_rule['annotated'].append(annotated)
-            extra_utr_rule['coding'].append(bool_pass)
-            extra_utr_rule['utr'].append(utr)
-            extra_utr_rule['gencode'].append(gencode)
-            
-            #NOTE: revert to leafcutter2 bed format coordiantes for junctions
-        coding = [extra_utr_rule['junction'][k] for k in [i for i,bol in enumerate(extra_utr_rule['coding']) if bol]]
-        if strand == '+':
-            coding_5_prime = [j[0] for j in coding]
-        else:
-            coding_5_prime = [j[1] for j in coding]
 
-        utr_js = []
-        for i in range(len(extra_utr_rule['annotated'])):
-            j = extra_utr_rule['junction'][i]
-            utr = extra_utr_rule['utr'][i]
+            failing_juncs = junc_fail.difference(junc_pass)
+
+
+            old_junc_pass = junc_pass
+            junc_pass = {}
+            junc_pass['normal'] = old_junc_pass
+            ptc_junctions, ptc_distances, ptc_exon_lens = long_exon_finder(failing_juncs, gene_name, transcripts_by_gene, strand, chrom, fa)
+            exons_before, exons_after = many_junctions(failing_juncs, gene_name, transcripts_by_gene, strand, chrom, fa)
+            junc_pass['nuc_rule'], ejc_distances = nucleotide_rule(failing_juncs, gene_name, transcripts_by_gene, strand, chrom, nmd_tx_by_gene, fa)
+            for j in junctions:
+
+                bool_pass = j in junc_pass['normal'] 
+                gencode = j in g_info[gene_name]['pcjunctions']
+                bool_fail = j in failing_juncs
+
+                if bool_fail or bool_pass:
+                    tested = True
+                else:
+                    tested = False
+                annotated = j in g_info[gene_name]['junctions']
+                
+                if len(start_codons) != 0 and len(stop_codons) != 0:
+                    utr = check_utrs(j, strand, start_codons, stop_codons)
+                else:
+                    utr = False
+
+                extra_utr_rule['junction'].append(j)
+                extra_utr_rule['annotated'].append(annotated)
+                extra_utr_rule['coding'].append(bool_pass)
+                extra_utr_rule['utr'].append(utr)
+                extra_utr_rule['gencode'].append(gencode)
+                
+                #NOTE: revert to leafcutter2 bed format coordiantes for junctions
+            coding = [extra_utr_rule['junction'][k] for k in [i for i,bol in enumerate(extra_utr_rule['coding']) if bol]]
             if strand == '+':
-                if utr and j[0] in coding_5_prime and j[0] > max([k[0] for k in start_codons]):
-                    utr = False
+                coding_5_prime = [j[0] for j in coding]
             else:
-                if utr and j[1] in coding_5_prime and j[1] < min([k[1] for k in start_codons]):
-                    utr = False
-            annotated = extra_utr_rule['annotated'][i]
-            bool_pass = extra_utr_rule['coding'][i]
-            gencode = extra_utr_rule['gencode'][i]
-            fout.write('\t'.join([gene_name, f'{chrom}:{j[0]}-{j[1]-1}',strand,
-                                    str(annotated), str(bool_pass), str(utr), str(gencode)])+'\n')
-            if utr:
-                utr_js.append(j)
-        
-        for w in range(len(ptc_junctions)):
-            j = ptc_junctions[w]
-            if j not in utr_js:
-                if j not in g_info[gene_name]['pcjunctions']:
-                    lout.write('\t'.join([gene_name, f'{chrom}:{j[0]}-{j[1]-1}',
-                                        str(ptc_distances[w]), str(ptc_exon_lens[w])])+'\n')
-        for j in exons_before:
-            if j not in utr_js:
-                if j not in g_info[gene_name]['pcjunctions']:
-                    eout.write('\t'.join([gene_name, f'{chrom}:{j[0]}-{j[1]-1}',
-                                        str(exons_before[j]), str(exons_after[j])])+'\n')
+                coding_5_prime = [j[1] for j in coding]
 
-        for w in range(len(junc_pass['nuc_rule'])):
-            j = junc_pass['nuc_rule'][w]
-            if j not in utr_js:
-                if j not in g_info[gene_name]['pcjunctions']:
-                    nout.write('\t'.join([gene_name, f'{chrom}:{j[0]}-{j[1]-1}',
-                                        str(ejc_distances[w])])+'\n') 
+            utr_js = []
+            for i in range(len(extra_utr_rule['annotated'])):
+                j = extra_utr_rule['junction'][i]
+                utr = extra_utr_rule['utr'][i]
+                if strand == '+':
+                    if utr and j[0] in coding_5_prime and j[0] > max([k[0] for k in start_codons]):
+                        utr = False
+                else:
+                    if utr and j[1] in coding_5_prime and j[1] < min([k[1] for k in start_codons]):
+                        utr = False
+                annotated = extra_utr_rule['annotated'][i]
+                bool_pass = extra_utr_rule['coding'][i]
+                gencode = extra_utr_rule['gencode'][i]
+                fout.write('\t'.join([gene_name, f'{chrom}:{j[0]}-{j[1]-2}',strand,
+                                        str(annotated), str(bool_pass), str(utr), str(gencode)])+'\n')
+                if utr:
+                    utr_js.append(j)
+            
+            for w in range(len(ptc_junctions)):
+                j = ptc_junctions[w]
+                if j not in utr_js:
+                    if j not in g_info[gene_name]['pcjunctions']:
+                        lout.write('\t'.join([gene_name, f'{chrom}:{j[0]}-{j[1]-2}',
+                                            str(ptc_distances[w]), str(ptc_exon_lens[w])])+'\n')
+            for j in exons_before:
+                if j not in utr_js:
+                    if j not in g_info[gene_name]['pcjunctions']:
+                        eout.write('\t'.join([gene_name, f'{chrom}:{j[0]}-{j[1]-2}',
+                                            str(exons_before[j]), str(exons_after[j])])+'\n')
+
+            for w in range(len(junc_pass['nuc_rule'])):
+                j = junc_pass['nuc_rule'][w]
+                if j not in utr_js:
+                    if j not in g_info[gene_name]['pcjunctions']:
+                        nout.write('\t'.join([gene_name, f'{chrom}:{j[0]}-{j[1]-2}',
+                                            str(ejc_distances[w])])+'\n') 
+    finally:
+        fout.close()
+        lout.close()
+        eout.close()
+        nout.close()
 

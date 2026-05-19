@@ -76,8 +76,8 @@
     <div class="card">
       <h2>Execution Mode</h2>
       <select id="mode" name="mode">
-        <option value="local" selected>Local (run on this machine)</option>
-        <option value="slurm">Quest Slurm (submit to HPC cluster)</option>
+        <option value="local">Local (run on this machine)</option>
+        <option value="slurm" selected>Quest Slurm (submit to HPC cluster)</option>
       </select>
     </div>
 
@@ -86,6 +86,7 @@
       <div class="source-radios">
         <label><input type="radio" name="source" value="upload" checked /> Upload Files</label>
         <label><input type="radio" name="source" value="gtex" /> GTEx Portal (V8)</label>
+        <label><input type="radio" name="source" value="zebrafish" /> Zebrafish (Public Projects)</label>
       </div>
     </div>
 
@@ -112,6 +113,82 @@
       <label for="max_samples_per_tissue">Max Samples per Tissue</label>
       <input id="max_samples_per_tissue" name="max_samples_per_tissue" type="number" value="0" min="0" placeholder="0 = all samples" />
       <p class="hint">Limit the number of samples used per tissue. Set to 0 to use all available samples. A value like 50–100 is useful for quick test runs.</p>
+      <div id="parallel-tissues-row" class="hidden" style="margin-top:12px;">
+        <label style="display:inline-flex; align-items:center; gap:8px; font-weight:500; cursor:pointer;">
+          <input type="checkbox" id="parallel_tissues" style="width:auto;" />
+          Run tissues in parallel (Slurm job array)
+        </label>
+        <p class="hint">Each tissue runs as a separate Slurm array task for faster wall-clock time. Results are merged automatically.</p>
+      </div>
+    </div>
+
+    <div class="card hidden" id="zebrafish-card">
+      <h2>Zebrafish End-to-End (Quest)</h2>
+      <p class="hint" style="margin-bottom:8px;">
+        3-step pipeline: QC &amp; Trim &rarr; STAR Alignment &rarr; LeafCutter2 Analysis.
+        Enter project IDs, run QC first, review reports, then proceed to alignment and analysis.
+      </p>
+      <label for="zebrafish_projects_csv">Project IDs (comma-separated)</label>
+      <input id="zebrafish_projects_csv" name="zebrafish_projects_csv" value="PRJEB7244" placeholder="PRJNA123456,ERP000001" />
+
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px;">
+        <div>
+          <label for="qc_job_id">QC Job ID (required for Step 2)</label>
+          <input id="qc_job_id" name="qc_job_id" placeholder="Auto-filled after QC completes" />
+        </div>
+        <div>
+          <label for="stage1_job_id">Alignment Job ID (required for Step 3)</label>
+          <input id="stage1_job_id" name="stage1_job_id" placeholder="Auto-filled after alignment completes" />
+        </div>
+        <div>
+          <label for="stage2_job_id">LC2 Job ID (optional, for Step 4 cross-ref)</label>
+          <input id="stage2_job_id" name="stage2_job_id" placeholder="Auto-filled after LeafCutter2 completes" />
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+        <div>
+          <label for="zebrafish_pe_list">POISEN PE list (path on Quest repo)</label>
+          <input id="zebrafish_pe_list" name="zebrafish_pe_list" value="UPDATED_STRAND_POISEN_HITS.tsv" />
+        </div>
+        <div>
+          <label for="zebrafish_longorf_tsv">LongORF PTC TSV (path on Quest repo)</label>
+          <input id="zebrafish_longorf_tsv" name="zebrafish_longorf_tsv" value="LongORF_PTC+_fromClustered.tsv" />
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:8px; margin-bottom:8px;">
+        <button type="button" id="load-stage1-timepoints" class="btn btn-sm" style="background:#6c757d; color:#fff;">Load Alignment Timepoints</button>
+      </div>
+      <label for="zebrafish-timepoint-select">Timepoints for Step 3 (optional; default all)</label>
+      <select id="zebrafish-timepoint-select" class="tissue-select" multiple style="height:140px;"></select>
+      <div class="tissue-actions">
+        <button type="button" id="zebrafish-timepoint-select-all">Select All</button>
+        <button type="button" id="zebrafish-timepoint-deselect-all">Deselect All</button>
+      </div>
+      <div class="tissue-count" id="zebrafish-timepoint-count">Run Step 2 first, then load timepoints.</div>
+      <label for="zebrafish_max_runs">Max Runs (optional)</label>
+      <input id="zebrafish_max_runs" name="zebrafish_max_runs" type="number" value="1" min="0" placeholder="0 = all discovered runs" />
+      <label for="zebrafish_star_threads">STAR Threads</label>
+      <input id="zebrafish_star_threads" name="zebrafish_star_threads" type="number" value="8" min="1" />
+      <label for="zebrafish_genome_fasta">Zebrafish Genome FASTA (path on Quest repo)</label>
+      <input id="zebrafish_genome_fasta" name="zebrafish_genome_fasta" value="refs/GRCz12tu.fa" />
+      <label for="zebrafish_gencode_gtf">Zebrafish GTF (path on Quest repo)</label>
+      <input id="zebrafish_gencode_gtf" name="zebrafish_gencode_gtf" value="refs/GRCz12tu.ucsc.gtf" />
+      <label for="zebrafish_gene_type_tag">GTF gene type tag</label>
+      <input id="zebrafish_gene_type_tag" name="zebrafish_gene_type_tag" value="gene_biotype" />
+      <label for="zebrafish_transcript_type_tag">GTF transcript type tag</label>
+      <input id="zebrafish_transcript_type_tag" name="zebrafish_transcript_type_tag" value="transcript_biotype" />
+      <label for="zebrafish_gene_name_tag">GTF gene name/id tag</label>
+      <input id="zebrafish_gene_name_tag" name="zebrafish_gene_name_tag" value="gene_id" />
+      <label for="zebrafish_transcript_name_tag">GTF transcript name/id tag</label>
+      <input id="zebrafish_transcript_name_tag" name="zebrafish_transcript_name_tag" value="transcript_id" />
+      <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+        <button type="button" class="btn" id="zebrafish-full-btn" style="background:#e83e8c; color:#fff;">Run All Stages Automatically</button>
+        <button type="button" class="btn" id="zebrafish-qc-btn" style="background:#17a2b8; color:#fff;">Step 1: QC &amp; Trim</button>
+        <button type="button" class="btn btn-primary" id="zebrafish-stage1-btn">Step 2: Alignment</button>
+        <button type="button" class="btn btn-success" id="zebrafish-stage2-btn">Step 3: LeafCutter2</button>
+        <button type="button" class="btn" id="zebrafish-stage3-btn" style="background:#6f42c1; color:#fff;">Step 4: POISEN PE Inclusion</button>
+      </div>
+      <p class="hint">This source is Quest-only in v1 (mode must be Slurm).</p>
     </div>
 
     <div class="card">
@@ -137,7 +214,7 @@
       <div class="grid2">
         <div>
           <label for="quest_user">Quest Username (NetID)</label>
-          <input id="quest_user" name="quest_user" placeholder="abc123" />
+          <input id="quest_user" name="quest_user" value="iis1026" />
         </div>
         <div>
           <label for="quest_host">Quest Host</label>
@@ -147,17 +224,17 @@
       <div class="grid2">
         <div>
           <label for="quest_account">Slurm Account</label>
-          <input id="quest_account" name="quest_account" placeholder="b1042" />
+          <input id="quest_account" name="quest_account" value="p52853" />
         </div>
         <div>
           <label for="quest_partition">Partition</label>
-          <input id="quest_partition" name="quest_partition" placeholder="genomicsguest" />
+          <input id="quest_partition" name="quest_partition" value="short" />
         </div>
       </div>
       <label for="remote_repo_root">Leaf_Cutter Repo Path on Quest</label>
-      <input id="remote_repo_root" name="remote_repo_root" placeholder="/projects/pXXXXX/Leaf_Cutter" />
+      <input id="remote_repo_root" name="remote_repo_root" value="/projects/p52853/iis1026/Leaf_Cutter" />
       <label for="remote_work_root">Remote Job Directory Root</label>
-      <input id="remote_work_root" name="remote_work_root" value="~/leafcutter_jobs" />
+      <input id="remote_work_root" name="remote_work_root" placeholder="(defaults to repo_root/jobs)" />
       <label for="remote_juncfiles">Remote Junction File List (skip upload)</label>
       <input id="remote_juncfiles" name="remote_juncfiles" placeholder="/projects/.../junction_files.txt" />
       <p class="hint">If your data is already on Quest, provide the path to the junction file list here.</p>
@@ -193,11 +270,30 @@
     <h2>Results</h2>
     <div class="tabs">
       <div class="tab active" data-tab="summary-tab">Summary</div>
+      <div class="tab hidden" data-tab="qc-tab" id="qc-tab-btn">QC Report</div>
       <div class="tab" data-tab="tissue-tab">Tissue Chart</div>
+      <div class="tab hidden" data-tab="poison-tab" id="poison-tab-btn">Poison Exons</div>
+      <div class="tab hidden" data-tab="pe-tab" id="pe-tab-btn">Long-read PEs</div>
       <div class="tab" data-tab="log-tab">Pipeline Log</div>
     </div>
     <div id="summary-tab" class="tab-content active">
       <pre id="summary-json">Waiting for results...</pre>
+    </div>
+    <div id="qc-tab" class="tab-content">
+      <div id="qc-report-container">
+        <p id="qc-report-placeholder" style="color:var(--muted); font-size:0.9rem;">
+          No QC report available for this run.
+        </p>
+        <div id="qc-report-content" class="hidden">
+          <div id="qc-summary-stats" style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:12px; font-size:0.88rem;"></div>
+          <div style="margin-bottom:12px;">
+            <strong>MultiQC Report:</strong>
+            <a id="qc-multiqc-link" href="#" target="_blank" style="margin-left:8px;">Open in new tab</a>
+          </div>
+          <iframe id="qc-multiqc-iframe" style="width:100%; height:600px; border:1px solid var(--border); border-radius:4px;" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div id="qc-fastp-links" style="margin-top:12px;"></div>
+        </div>
+      </div>
     </div>
     <div id="tissue-tab" class="tab-content">
       <div id="tissue-chart-container">
@@ -212,6 +308,92 @@
           <div style="display:flex; gap:8px; margin-top:12px;">
             <button class="btn btn-success btn-sm" id="tissue-dl-png">Download PNG</button>
             <button class="btn btn-sm" id="tissue-dl-tsv" style="background:#6c757d; color:#fff;">Download TSV</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="poison-tab" class="tab-content">
+      <div id="poison-container">
+        <p id="poison-placeholder" style="color:var(--muted); font-size:0.9rem;">
+          No poison-exon analysis available for this run.
+        </p>
+        <div id="poison-content" class="hidden">
+          <div id="poison-stats" style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:16px; font-size:0.88rem;"></div>
+          <h3 style="font-size:0.95rem; margin:16px 0 8px;">UP Junction PSI Heatmap (top candidates)</h3>
+          <div style="text-align:center;">
+            <img id="poison-heatmap-img" style="max-width:100%; border:1px solid var(--border); border-radius:4px;" alt="Poison exon heatmap" />
+          </div>
+          <h3 style="font-size:0.95rem; margin:16px 0 8px;">PSI Correlation with Developmental Time</h3>
+          <div style="text-align:center;">
+            <img id="poison-corr-img" style="max-width:100%; border:1px solid var(--border); border-radius:4px;" alt="UP PSI vs time" />
+          </div>
+          <h3 style="font-size:0.95rem; margin:16px 0 8px;">NMD Feature Distributions</h3>
+          <div style="text-align:center;">
+            <img id="poison-nmd-img" style="max-width:100%; border:1px solid var(--border); border-radius:4px;" alt="NMD features" />
+          </div>
+          <h3 style="font-size:0.95rem; margin:16px 0 8px;">Top Poison-Exon Candidates</h3>
+          <div style="overflow-x:auto;">
+            <table id="poison-table" style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+              <thead id="poison-thead"></thead>
+              <tbody id="poison-tbody"></tbody>
+            </table>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+            <button class="btn btn-success btn-sm" id="poison-dl-tsv">Download Candidates TSV</button>
+            <button class="btn btn-sm" id="poison-dl-heatmap" style="background:#6c757d; color:#fff;">Download Heatmap</button>
+            <button class="btn btn-sm" id="poison-dl-corr" style="background:#6c757d; color:#fff;">Download Correlation</button>
+            <button class="btn btn-sm" id="poison-dl-nmd" style="background:#6c757d; color:#fff;">Download NMD Plot</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="pe-tab" class="tab-content">
+      <div id="pe-container">
+        <p id="pe-placeholder" style="color:var(--muted); font-size:0.9rem;">
+          No long-read PE analysis available for this run.
+          Run zebrafish stage3 (POISEN PE differential inclusion) to populate this tab.
+        </p>
+        <div id="pe-content" class="hidden">
+          <div id="pe-stats" style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:16px; font-size:0.88rem;"></div>
+          <div id="pe-filter-row" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:12px; font-size:0.82rem;">
+            <label><strong>Filter:</strong></label>
+            <label><input type="checkbox" id="pe-filter-cassette" checked> cassette</label>
+            <label><input type="checkbox" id="pe-filter-alt5p" checked> alt_5p</label>
+            <label><input type="checkbox" id="pe-filter-coordmatch"> coord_match_ptc only</label>
+            <label><input type="checkbox" id="pe-filter-lc2up"> LC2 called UP only</label>
+            <label><input type="checkbox" id="pe-filter-longorf"> LongORF supports PTC</label>
+            <label>FDR &le; <input type="number" id="pe-filter-fdr" value="0.05" step="0.01" min="0" max="1" style="width:64px;"></label>
+            <label>Top N <input type="number" id="pe-filter-topn" value="50" min="5" max="500" style="width:64px;"></label>
+          </div>
+          <h3 style="font-size:0.95rem; margin:16px 0 8px;">PSI heatmap (top candidates by FDR)</h3>
+          <div style="text-align:center;">
+            <img id="pe-heatmap-img" style="max-width:100%; border:1px solid var(--border); border-radius:4px;" alt="PE PSI heatmap" />
+          </div>
+          <h3 style="font-size:0.95rem; margin:16px 0 8px;">PSI vs developmental time (top candidates)</h3>
+          <div style="text-align:center;">
+            <img id="pe-psi-vs-time-img" style="max-width:100%; border:1px solid var(--border); border-radius:4px;" alt="PE PSI vs time" />
+          </div>
+          <h3 style="font-size:0.95rem; margin:16px 0 8px;">Spearman \u03c1 distribution</h3>
+          <div style="text-align:center;">
+            <img id="pe-spearman-img" style="max-width:100%; border:1px solid var(--border); border-radius:4px;" alt="PE Spearman distribution" />
+          </div>
+          <h3 style="font-size:0.95rem; margin:16px 0 8px;">LC2 concordance</h3>
+          <div style="text-align:center;">
+            <img id="pe-concordance-img" style="max-width:100%; border:1px solid var(--border); border-radius:4px;" alt="PE LC2 concordance" />
+          </div>
+          <h3 style="font-size:0.95rem; margin:16px 0 8px;">Ranked POISEN PE candidates</h3>
+          <div style="overflow-x:auto;">
+            <table id="pe-table" style="width:100%; border-collapse:collapse; font-size:0.78rem;">
+              <thead id="pe-thead"></thead>
+              <tbody id="pe-tbody"></tbody>
+            </table>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+            <button class="btn btn-success btn-sm" id="pe-dl-tsv">Download Candidates TSV</button>
+            <button class="btn btn-sm" id="pe-dl-events" style="background:#6c757d; color:#fff;">Download Events</button>
+            <button class="btn btn-sm" id="pe-dl-psi" style="background:#6c757d; color:#fff;">Download PSI Matrix</button>
+            <button class="btn btn-sm" id="pe-dl-heatmap" style="background:#6c757d; color:#fff;">Download Heatmap</button>
+            <button class="btn btn-sm" id="pe-dl-vs-time" style="background:#6c757d; color:#fff;">Download PSI vs Time</button>
           </div>
         </div>
       </div>
@@ -249,6 +431,7 @@ const logContent = $("#log-content");
 const submitBtn = $("#submit-btn");
 const uploadCard = $("#upload-card");
 const gtexCard = $("#gtex-card");
+const zebrafishCard = $("#zebrafish-card");
 const tissueSelect = $("#gtex-tissue-select");
 const tissueCount = $("#tissue-count");
 const progressContainer = $("#progress-container");
@@ -261,6 +444,60 @@ const tissueChartImg = $("#tissue-chart-img");
 const tissueStats = $("#tissue-stats");
 const tissueDlPng = $("#tissue-dl-png");
 const tissueDlTsv = $("#tissue-dl-tsv");
+const zebrafishFullBtn = $("#zebrafish-full-btn");
+const zebrafishQcBtn = $("#zebrafish-qc-btn");
+const zebrafishStage1Btn = $("#zebrafish-stage1-btn");
+const zebrafishStage2Btn = $("#zebrafish-stage2-btn");
+const zebrafishStage3Btn = $("#zebrafish-stage3-btn");
+const qcJobIdInput = $("#qc_job_id");
+const stage1JobIdInput = $("#stage1_job_id");
+const stage2JobIdInput = $("#stage2_job_id");
+const loadStage1TimepointsBtn = $("#load-stage1-timepoints");
+const zebrafishTimepointSelect = $("#zebrafish-timepoint-select");
+const zebrafishTimepointCount = $("#zebrafish-timepoint-count");
+const poisonTabBtn = $("#poison-tab-btn");
+const poisonPlaceholder = $("#poison-placeholder");
+const poisonContent = $("#poison-content");
+const poisonStats = $("#poison-stats");
+const poisonHeatmapImg = $("#poison-heatmap-img");
+const poisonCorrImg = $("#poison-corr-img");
+const poisonNmdImg = $("#poison-nmd-img");
+const poisonThead = $("#poison-thead");
+const poisonTbody = $("#poison-tbody");
+const poisonDlTsv = $("#poison-dl-tsv");
+const poisonDlHeatmap = $("#poison-dl-heatmap");
+const poisonDlCorr = $("#poison-dl-corr");
+const poisonDlNmd = $("#poison-dl-nmd");
+const peTabBtn = $("#pe-tab-btn");
+const pePlaceholder = $("#pe-placeholder");
+const peContent = $("#pe-content");
+const peStats = $("#pe-stats");
+const peHeatmapImg = $("#pe-heatmap-img");
+const pePsiVsTimeImg = $("#pe-psi-vs-time-img");
+const peSpearmanImg = $("#pe-spearman-img");
+const peConcordanceImg = $("#pe-concordance-img");
+const peThead = $("#pe-thead");
+const peTbody = $("#pe-tbody");
+const peDlTsv = $("#pe-dl-tsv");
+const peDlEvents = $("#pe-dl-events");
+const peDlPsi = $("#pe-dl-psi");
+const peDlHeatmap = $("#pe-dl-heatmap");
+const peDlVsTime = $("#pe-dl-vs-time");
+const peFilterCassette = $("#pe-filter-cassette");
+const peFilterAlt5p = $("#pe-filter-alt5p");
+const peFilterCoordmatch = $("#pe-filter-coordmatch");
+const peFilterLc2up = $("#pe-filter-lc2up");
+const peFilterLongorf = $("#pe-filter-longorf");
+const peFilterFdr = $("#pe-filter-fdr");
+const peFilterTopn = $("#pe-filter-topn");
+let peCandidatesData = null;
+const qcTabBtn = $("#qc-tab-btn");
+const qcReportPlaceholder = $("#qc-report-placeholder");
+const qcReportContent = $("#qc-report-content");
+const qcSummaryStats = $("#qc-summary-stats");
+const qcMultiqcLink = $("#qc-multiqc-link");
+const qcMultiqcIframe = $("#qc-multiqc-iframe");
+const qcFastpLinks = $("#qc-fastp-links");
 
 let currentJobId = null;
 let pollTimer = null;
@@ -276,15 +513,28 @@ function updateSourceUI() {
   const src = getSource();
   uploadCard.style.display = src === "upload" ? "block" : "none";
   gtexCard.style.display = src === "gtex" ? "block" : "none";
+  zebrafishCard.style.display = src === "zebrafish" ? "block" : "none";
+  submitBtn.style.display = src === "zebrafish" ? "none" : "inline-block";
 }
+const parallelRow = $("#parallel-tissues-row");
+const parallelCheck = $("#parallel_tissues");
+
 document.querySelectorAll('input[name="source"]').forEach(r =>
-  r.addEventListener("change", updateSourceUI)
+  r.addEventListener("change", () => { updateSourceUI(); updateParallelVisibility(); })
 );
 updateSourceUI();
 
 function updateModeUI() {
   slurmCard.style.display = modeSelect.value === "slurm" ? "block" : "none";
+  updateParallelVisibility();
 }
+
+function updateParallelVisibility() {
+  const show = getSource() === "gtex" && modeSelect.value === "slurm";
+  parallelRow.classList.toggle("hidden", !show);
+  if (!show) parallelCheck.checked = false;
+}
+
 modeSelect.addEventListener("change", updateModeUI);
 updateModeUI();
 
@@ -390,11 +640,52 @@ async function fetchResults() {
     if (d.summary) {
       summaryJson.textContent = JSON.stringify(d.summary, null, 2);
       renderTissueChart(d.summary);
+      renderQcReport(d.summary);
+      renderPoisonExonTab(d.summary);
+      renderPeTab(d.summary);
     }
     if (d.log_tail && d.log_tail.length && logContent.textContent === "No log available yet.") {
       logContent.textContent = d.log_tail.join("\n");
     }
   } catch (_) {}
+}
+
+function renderQcReport(summary) {
+  if (!summary || summary.stage !== "qc_report") {
+    qcTabBtn.classList.add("hidden");
+    qcReportPlaceholder.classList.remove("hidden");
+    qcReportContent.classList.add("hidden");
+    return;
+  }
+  qcTabBtn.classList.remove("hidden");
+
+  const qs = summary.qc_summary || {};
+  const stats = [];
+  stats.push(`<span><strong>Total:</strong> ${summary.n_total || 0}</span>`);
+  stats.push(`<span><strong>Passed:</strong> ${summary.n_passed || 0}</span>`);
+  if (summary.n_failed) stats.push(`<span style="color:#dc3545;"><strong>Failed:</strong> ${summary.n_failed}</span>`);
+  const allStats = Object.values(qs);
+  if (allStats.length) {
+    const avgPass = allStats.reduce((s, v) => s + (v.pct_passing || 0), 0) / allStats.length;
+    stats.push(`<span><strong>Avg pass rate:</strong> ${avgPass.toFixed(1)}%</span>`);
+  }
+  qcSummaryStats.innerHTML = stats.join("");
+
+  const mqcUrl = `/jobs/${currentJobId}/artifacts/multiqc_report.html`;
+  qcMultiqcLink.href = mqcUrl;
+  qcMultiqcIframe.src = mqcUrl;
+
+  let linksHtml = "<strong>Per-sample fastp reports:</strong><br>";
+  for (const runId of Object.keys(qs)) {
+    const url = `/jobs/${currentJobId}/artifacts/${runId}.fastp.html`;
+    const s = qs[runId];
+    const pct = s.pct_passing != null ? ` (${s.pct_passing}% pass)` : "";
+    linksHtml += `<a href="${url}" target="_blank">${runId}${pct}</a>&nbsp;&nbsp;`;
+  }
+  qcFastpLinks.innerHTML = linksHtml;
+
+  qcReportPlaceholder.classList.add("hidden");
+  qcReportContent.classList.remove("hidden");
 }
 
 function renderTissueChart(summary) {
@@ -415,11 +706,198 @@ function renderTissueChart(summary) {
   if (m.n_samples != null) stats.push(`<span><strong>Samples:</strong> ${m.n_samples}</span>`);
   if (m.global_weighted_mean_pct != null) stats.push(`<span><strong>Weighted mean:</strong> ${m.global_weighted_mean_pct.toFixed(3)}%</span>`);
   if (m.global_median_pct != null) stats.push(`<span><strong>Median:</strong> ${m.global_median_pct.toFixed(3)}%</span>`);
+  if (m.spearman_rho != null) stats.push(`<span><strong>Spearman \u03c1:</strong> ${m.spearman_rho.toFixed(3)} (p=${m.spearman_p != null ? m.spearman_p.toFixed(3) : "n/a"})</span>`);
   tissueStats.innerHTML = stats.join("");
 
   tissueDlPng.onclick = () => { window.location.href = `/jobs/${currentJobId}/artifacts/${m.png}`; };
   tissueDlTsv.onclick = () => { window.location.href = `/jobs/${currentJobId}/artifacts/${m.tsv}`; };
 }
+
+async function renderPoisonExonTab(summary) {
+  const m = summary && summary.metrics && summary.metrics.poison_exon_analysis;
+  if (!m) {
+    poisonTabBtn.classList.add("hidden");
+    poisonPlaceholder.classList.remove("hidden");
+    poisonContent.classList.add("hidden");
+    return;
+  }
+  poisonTabBtn.classList.remove("hidden");
+  poisonPlaceholder.classList.add("hidden");
+  poisonContent.classList.remove("hidden");
+
+  const stats = [];
+  if (m.n_candidates != null) stats.push(`<span><strong>UP Junctions:</strong> ${m.n_candidates}</span>`);
+  if (m.n_nmd_eligible != null) stats.push(`<span><strong>NMD-eligible:</strong> ${m.n_nmd_eligible}</span>`);
+  if (m.n_significant != null) stats.push(`<span><strong>Significant (p&lt;0.05):</strong> ${m.n_significant}</span>`);
+  poisonStats.innerHTML = stats.join("");
+
+  if (m.heatmap_png) poisonHeatmapImg.src = `/jobs/${currentJobId}/artifacts/${m.heatmap_png}`;
+  if (m.correlation_png) poisonCorrImg.src = `/jobs/${currentJobId}/artifacts/${m.correlation_png}`;
+  if (m.nmd_png) poisonNmdImg.src = `/jobs/${currentJobId}/artifacts/${m.nmd_png}`;
+
+  poisonDlTsv.onclick = () => { if (m.tsv) window.location.href = `/jobs/${currentJobId}/artifacts/${m.tsv}`; };
+  poisonDlHeatmap.onclick = () => { if (m.heatmap_png) window.location.href = `/jobs/${currentJobId}/artifacts/${m.heatmap_png}`; };
+  poisonDlCorr.onclick = () => { if (m.correlation_png) window.location.href = `/jobs/${currentJobId}/artifacts/${m.correlation_png}`; };
+  poisonDlNmd.onclick = () => { if (m.nmd_png) window.location.href = `/jobs/${currentJobId}/artifacts/${m.nmd_png}`; };
+
+  try {
+    const r = await fetch(`/jobs/${currentJobId}/artifacts/${m.json}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    const cands = (data.candidates || []).slice(0, 30);
+    const timepoints = data.timepoints || [];
+
+    const thCols = ["Gene", "Junction", "Cluster"];
+    timepoints.forEach(tp => thCols.push(`PSI ${tp}`));
+    thCols.push("\u03c1", "p", "NMD");
+    poisonThead.innerHTML = "<tr>" + thCols.map(c =>
+      `<th style="padding:4px 6px; border-bottom:2px solid var(--border); text-align:left; font-size:0.78rem; white-space:nowrap;">${c}</th>`
+    ).join("") + "</tr>";
+
+    poisonTbody.innerHTML = cands.map(c => {
+      const cells = [
+        `<td style="padding:3px 6px; font-weight:600;">${c.gene}</td>`,
+        `<td style="padding:3px 6px; font-size:0.75rem;">${c.junction_coord}</td>`,
+        `<td style="padding:3px 6px; font-size:0.75rem;">${c.cluster_id}</td>`,
+      ];
+      timepoints.forEach(tp => {
+        const v = c["psi_" + tp];
+        cells.push(`<td style="padding:3px 6px; text-align:right;">${v != null ? v.toFixed(4) : "-"}</td>`);
+      });
+      const rhoStr = c.spearman_rho != null ? c.spearman_rho.toFixed(3) : "-";
+      const pStr = c.spearman_p != null ? c.spearman_p.toFixed(3) : "-";
+      const nmdStr = c.nmd_eligible ? "Yes" : "No";
+      const nmdColor = c.nmd_eligible ? "color:#198754; font-weight:600;" : "color:var(--muted);";
+      cells.push(`<td style="padding:3px 6px; text-align:right;">${rhoStr}</td>`);
+      cells.push(`<td style="padding:3px 6px; text-align:right;">${pStr}</td>`);
+      cells.push(`<td style="padding:3px 6px; text-align:center; ${nmdColor}">${nmdStr}</td>`);
+      return `<tr style="border-bottom:1px solid #eee;">${cells.join("")}</tr>`;
+    }).join("");
+  } catch (_) {}
+}
+
+async function renderPeTab(summary) {
+  const m = summary && summary.metrics && summary.metrics.pe_inclusion_analysis;
+  if (!m) {
+    peTabBtn.classList.add("hidden");
+    pePlaceholder.classList.remove("hidden");
+    peContent.classList.add("hidden");
+    return;
+  }
+  peTabBtn.classList.remove("hidden");
+  pePlaceholder.classList.add("hidden");
+  peContent.classList.remove("hidden");
+
+  const stats = [];
+  if (m.n_candidates != null) stats.push(`<span><strong>POISEN PE events:</strong> ${m.n_candidates}</span>`);
+  if (m.n_events_in_psi != null) stats.push(`<span><strong>Events with PSI:</strong> ${m.n_events_in_psi}</span>`);
+  if (m.stage_a) {
+    if (m.stage_a.n_input_rows != null) stats.push(`<span><strong>Input POISEN rows:</strong> ${m.stage_a.n_input_rows}</span>`);
+    if (m.stage_a.n_unique_events != null) stats.push(`<span><strong>Unique events:</strong> ${m.stage_a.n_unique_events}</span>`);
+  }
+  if (m.stage_c) {
+    if (m.stage_c.n_events_tested != null) stats.push(`<span><strong>Tested:</strong> ${m.stage_c.n_events_tested}</span>`);
+    if (m.stage_c.n_significant_q05 != null) stats.push(`<span><strong>FDR&lt;0.05:</strong> ${m.stage_c.n_significant_q05}</span>`);
+    if (m.stage_c.n_significant_p05 != null) stats.push(`<span><strong>p&lt;0.05:</strong> ${m.stage_c.n_significant_p05}</span>`);
+  }
+  if (m.ordered_timepoints && m.ordered_timepoints.length) {
+    stats.push(`<span><strong>Timepoints:</strong> ${m.ordered_timepoints.join(", ")}</span>`);
+  }
+  peStats.innerHTML = stats.join("");
+
+  if (m.heatmap_png) peHeatmapImg.src = `/jobs/${currentJobId}/artifacts/${m.heatmap_png}`;
+  if (m.psi_vs_time_png) pePsiVsTimeImg.src = `/jobs/${currentJobId}/artifacts/${m.psi_vs_time_png}`;
+  if (m.spearman_distribution_png) peSpearmanImg.src = `/jobs/${currentJobId}/artifacts/${m.spearman_distribution_png}`;
+  if (m.lc2_concordance_png) {
+    peConcordanceImg.src = `/jobs/${currentJobId}/artifacts/${m.lc2_concordance_png}`;
+    peConcordanceImg.style.display = "";
+  } else {
+    peConcordanceImg.style.display = "none";
+  }
+
+  peDlTsv.onclick = () => { if (m.candidates_tsv) window.location.href = `/jobs/${currentJobId}/artifacts/${m.candidates_tsv}`; };
+  peDlEvents.onclick = () => { if (m.events_tsv) window.location.href = `/jobs/${currentJobId}/artifacts/${m.events_tsv}`; };
+  peDlPsi.onclick = () => { if (m.psi_tsv_gz) window.location.href = `/jobs/${currentJobId}/artifacts/${m.psi_tsv_gz}`; };
+  peDlHeatmap.onclick = () => { if (m.heatmap_png) window.location.href = `/jobs/${currentJobId}/artifacts/${m.heatmap_png}`; };
+  peDlVsTime.onclick = () => { if (m.psi_vs_time_png) window.location.href = `/jobs/${currentJobId}/artifacts/${m.psi_vs_time_png}`; };
+
+  peCandidatesData = null;
+  if (m.candidates_json) {
+    try {
+      const r = await fetch(`/jobs/${currentJobId}/artifacts/${m.candidates_json}`);
+      if (r.ok) peCandidatesData = await r.json();
+    } catch (_) {}
+  }
+  renderPeCandidatesTable();
+}
+
+function renderPeCandidatesTable() {
+  if (!peCandidatesData) {
+    peThead.innerHTML = "";
+    peTbody.innerHTML = "";
+    return;
+  }
+  const data = peCandidatesData;
+  const timepoints = data.timepoints || [];
+  const showCassette = peFilterCassette.checked;
+  const showAlt5p = peFilterAlt5p.checked;
+  const requireCoordMatch = peFilterCoordmatch.checked;
+  const requireLc2Up = peFilterLc2up.checked;
+  const requireLongorf = peFilterLongorf.checked;
+  const fdrCutoff = parseFloat(peFilterFdr.value || "1");
+  const topN = Math.max(1, parseInt(peFilterTopn.value || "50", 10));
+
+  let candidates = (data.candidates || []).filter(c => {
+    const t = (c.poison_exon_type || "").toLowerCase();
+    if (t === "cassette" && !showCassette) return false;
+    if (t === "alt_5p" && !showAlt5p) return false;
+    if (requireCoordMatch && String(c.coord_match_ptc).toLowerCase() !== "true") return false;
+    if (requireLc2Up && !c.lc2_called_up) return false;
+    if (requireLongorf && !c.longorf_supports_ptc) return false;
+    if (c.bh_fdr != null && c.bh_fdr > fdrCutoff) return false;
+    return true;
+  }).slice(0, topN);
+
+  const thCols = ["Gene", "Chrom:Start-End", "Strand", "Type", "PTC?", "LongORF?"];
+  timepoints.forEach(tp => thCols.push(`PSI ${tp}`));
+  thCols.push("\u03c1", "p", "FDR", "Reads", "LC2");
+  peThead.innerHTML = "<tr>" + thCols.map(c =>
+    `<th style="padding:4px 6px; border-bottom:2px solid var(--border); text-align:left; font-size:0.76rem; white-space:nowrap;">${c}</th>`
+  ).join("") + "</tr>";
+
+  peTbody.innerHTML = candidates.map(c => {
+    const fmt = (v, n=3) => v == null || isNaN(v) ? "-" : Number(v).toFixed(n);
+    const sci = v => v == null || isNaN(v) ? "-" : Number(v).toExponential(2);
+    const cells = [
+      `<td style="padding:3px 6px; font-weight:600;">${c.gene_symbol || "?"}</td>`,
+      `<td style="padding:3px 6px; font-size:0.72rem;">${c.chrom}:${c.pe_start}-${c.pe_end}</td>`,
+      `<td style="padding:3px 6px; text-align:center;">${c.strand || "?"}</td>`,
+      `<td style="padding:3px 6px; font-size:0.72rem;">${c.poison_exon_type || ""}</td>`,
+      `<td style="padding:3px 6px; text-align:center; ${String(c.coord_match_ptc).toLowerCase()==='true'?'color:#198754;font-weight:600':'color:var(--muted)'}">${String(c.coord_match_ptc).toLowerCase()==='true'?'\u2713':''}</td>`,
+      `<td style="padding:3px 6px; text-align:center; ${c.longorf_supports_ptc?'color:#198754;font-weight:600':'color:var(--muted)'}">${c.longorf_supports_ptc?'\u2713':(c.longorf_supports_ptc===false?'':'-')}</td>`,
+    ];
+    timepoints.forEach(tp => {
+      const v = c["psi_" + tp];
+      cells.push(`<td style="padding:3px 6px; text-align:right;">${fmt(v, 3)}</td>`);
+    });
+    cells.push(`<td style="padding:3px 6px; text-align:right;">${fmt(c.spearman_rho, 3)}</td>`);
+    cells.push(`<td style="padding:3px 6px; text-align:right;">${sci(c.spearman_p)}</td>`);
+    cells.push(`<td style="padding:3px 6px; text-align:right;">${sci(c.bh_fdr)}</td>`);
+    cells.push(`<td style="padding:3px 6px; text-align:right;">${c.total_event_reads != null ? c.total_event_reads : "-"}</td>`);
+    const lc2Tag = c.lc2_called_up ? "UP" : (c.lc2_seen_any_intron ? "seen" : "");
+    const lc2Color = c.lc2_called_up ? "color:#e15759;font-weight:600" : (c.lc2_seen_any_intron ? "color:#76b7b2" : "color:var(--muted)");
+    cells.push(`<td style="padding:3px 6px; text-align:center; ${lc2Color}">${lc2Tag}</td>`);
+    return `<tr style="border-bottom:1px solid #eee;">${cells.join("")}</tr>`;
+  }).join("");
+}
+
+[
+  "pe-filter-cassette","pe-filter-alt5p","pe-filter-coordmatch","pe-filter-lc2up",
+  "pe-filter-longorf","pe-filter-fdr","pe-filter-topn",
+].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("change", renderPeCandidatesTable);
+});
 
 // --- Job status polling ---
 
@@ -476,10 +954,69 @@ async function pollJob() {
   }
 }
 
+// --- Open existing job ---
+
+function openJob(jobId) {
+  stopPolling();
+  currentJobId = jobId;
+  logOffset = 0;
+  jobPanel.classList.remove("hidden");
+  jobIdDisplay.textContent = jobId;
+  errorBox.classList.add("hidden");
+  downloadBtn.classList.add("hidden");
+  cancelBtn.classList.add("hidden");
+  progressContainer.classList.add("hidden");
+  progressFill.style.width = "0%";
+  progressText.textContent = "";
+  progressLabel.textContent = "";
+  summaryJson.textContent = "Waiting for results...";
+  logContent.textContent = "No log available yet.";
+  tissueChartPlaceholder.classList.remove("hidden");
+  tissueChartContent.classList.add("hidden");
+  tissueChartImg.src = "";
+  tissueStats.innerHTML = "";
+  poisonTabBtn.classList.add("hidden");
+  poisonPlaceholder.classList.remove("hidden");
+  poisonContent.classList.add("hidden");
+  poisonHeatmapImg.src = "";
+  poisonCorrImg.src = "";
+  poisonNmdImg.src = "";
+  poisonThead.innerHTML = "";
+  poisonTbody.innerHTML = "";
+  poisonStats.innerHTML = "";
+  peTabBtn.classList.add("hidden");
+  pePlaceholder.classList.remove("hidden");
+  peContent.classList.add("hidden");
+  peStats.innerHTML = "";
+  peThead.innerHTML = "";
+  peTbody.innerHTML = "";
+  peHeatmapImg.src = "";
+  pePsiVsTimeImg.src = "";
+  peSpearmanImg.src = "";
+  peConcordanceImg.src = "";
+  peCandidatesData = null;
+  qcTabBtn.classList.add("hidden");
+  qcReportPlaceholder.classList.remove("hidden");
+  qcReportContent.classList.add("hidden");
+  qcMultiqcIframe.src = "";
+  qcSummaryStats.innerHTML = "";
+  qcFastpLinks.innerHTML = "";
+  resultsPanel.classList.add("hidden");
+  setBadge("queued");
+  submitBtn.disabled = false;
+  pollJob();
+  pollTimer = setInterval(pollJob, 3000);
+  jobPanel.scrollIntoView({ behavior: "smooth" });
+}
+
 // --- Submit ---
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+  if (getSource() === "zebrafish") {
+    showError("Use the Zebrafish Step 1 / Step 2 / Step 3 buttons.");
+    return;
+  }
   stopPolling();
   submitBtn.disabled = true;
 
@@ -494,6 +1031,20 @@ form.addEventListener("submit", async (e) => {
       return;
     }
     fd.set("gtex_tissues_csv", selected.join(","));
+    fd.set("run_tissues_in_parallel", parallelCheck.checked ? "true" : "false");
+  }
+  if (getSource() === "zebrafish") {
+    if (modeSelect.value !== "slurm") {
+      showError("Zebrafish source currently requires Quest Slurm mode.");
+      submitBtn.disabled = false;
+      return;
+    }
+    const projects = (fd.get("zebrafish_projects_csv") || "").toString().trim();
+    if (!projects) {
+      showError("Please enter at least one zebrafish project ID.");
+      submitBtn.disabled = false;
+      return;
+    }
   }
 
   // Reset UI state
@@ -537,6 +1088,195 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
+function resetJobPanelsForSubmission() {
+  logOffset = 0;
+  stopLogPolling();
+  jobPanel.classList.remove("hidden");
+  resultsPanel.classList.add("hidden");
+  downloadBtn.classList.add("hidden");
+  cancelBtn.classList.add("hidden");
+  errorBox.classList.add("hidden");
+  progressContainer.classList.add("hidden");
+  progressFill.style.width = "0%";
+  progressText.textContent = "";
+  progressLabel.textContent = "";
+  summaryJson.textContent = "Waiting for results...";
+  logContent.textContent = "No log available yet.";
+  tissueChartPlaceholder.classList.remove("hidden");
+  tissueChartContent.classList.add("hidden");
+  tissueChartImg.src = "";
+  tissueStats.innerHTML = "";
+  poisonTabBtn.classList.add("hidden");
+  poisonPlaceholder.classList.remove("hidden");
+  poisonContent.classList.add("hidden");
+  poisonHeatmapImg.src = "";
+  poisonCorrImg.src = "";
+  poisonNmdImg.src = "";
+  poisonThead.innerHTML = "";
+  poisonTbody.innerHTML = "";
+  poisonStats.innerHTML = "";
+  peTabBtn.classList.add("hidden");
+  pePlaceholder.classList.remove("hidden");
+  peContent.classList.add("hidden");
+  peStats.innerHTML = "";
+  peThead.innerHTML = "";
+  peTbody.innerHTML = "";
+  peHeatmapImg.src = "";
+  pePsiVsTimeImg.src = "";
+  peSpearmanImg.src = "";
+  peConcordanceImg.src = "";
+  peCandidatesData = null;
+  qcTabBtn.classList.add("hidden");
+  qcReportPlaceholder.classList.remove("hidden");
+  qcReportContent.classList.add("hidden");
+  qcMultiqcIframe.src = "";
+  qcSummaryStats.innerHTML = "";
+  qcFastpLinks.innerHTML = "";
+  setBadge("queued");
+}
+
+async function submitZebrafishStage(endpoint, triggerBtn) {
+  if (modeSelect.value !== "slurm") {
+    showError("Zebrafish stages require Quest Slurm mode.");
+    return;
+  }
+  stopPolling();
+  triggerBtn.disabled = true;
+  const fd = new FormData(form);
+  fd.set("mode", "slurm");
+  resetJobPanelsForSubmission();
+  try {
+    const r = await fetch(endpoint, { method: "POST", body: fd });
+    const d = await r.json();
+    if (!r.ok) {
+      showError(d.detail || d.error || "Submission failed");
+      setBadge("failed");
+      triggerBtn.disabled = false;
+      return;
+    }
+    currentJobId = d.job_id;
+    jobIdDisplay.textContent = d.job_id;
+    if (d.stage === "qc_report") {
+      qcJobIdInput.value = d.job_id;
+    }
+    if (d.stage === "stage1_alignment") {
+      stage1JobIdInput.value = d.job_id;
+      zebrafishTimepointSelect.innerHTML = "";
+      zebrafishTimepointCount.textContent = "Alignment submitted. Load timepoints after it succeeds.";
+    }
+    if (d.stage === "stage2_lc2") {
+      stage2JobIdInput.value = d.job_id;
+    }
+    setBadge(d.status);
+    pollTimer = setInterval(pollJob, 3000);
+    pollJob();
+  } catch (err) {
+    showError("Network error: " + err.message);
+    setBadge("failed");
+  } finally {
+    triggerBtn.disabled = false;
+  }
+}
+
+async function loadStage1Timepoints() {
+  const stage1JobId = (stage1JobIdInput.value || "").trim();
+  if (!stage1JobId) {
+    showError("Provide a Stage 1 job ID first.");
+    return;
+  }
+  try {
+    const r = await fetch(`/jobs/${stage1JobId}/results`);
+    const d = await r.json();
+    if (!r.ok || !d || !d.summary) {
+      zebrafishTimepointCount.textContent = "Could not load Stage 1 summary.";
+      return;
+    }
+    const stages = (d.summary.stages || []).filter(Boolean);
+    zebrafishTimepointSelect.innerHTML = "";
+    stages.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t;
+      opt.textContent = t;
+      opt.selected = true;
+      zebrafishTimepointSelect.appendChild(opt);
+    });
+    zebrafishTimepointCount.textContent = stages.length
+      ? `${stages.length} timepoints loaded from Stage 1`
+      : "No timepoint labels found in Stage 1 summary.";
+  } catch (_) {
+    zebrafishTimepointCount.textContent = "Could not load Stage 1 timepoints.";
+  }
+}
+
+loadStage1TimepointsBtn.addEventListener("click", loadStage1Timepoints);
+stage1JobIdInput.addEventListener("blur", () => {
+  if ((stage1JobIdInput.value || "").trim()) loadStage1Timepoints();
+});
+$("#zebrafish-timepoint-select-all").addEventListener("click", () => {
+  Array.from(zebrafishTimepointSelect.options).forEach(o => o.selected = true);
+});
+$("#zebrafish-timepoint-deselect-all").addEventListener("click", () => {
+  Array.from(zebrafishTimepointSelect.options).forEach(o => o.selected = false);
+});
+
+zebrafishQcBtn.addEventListener("click", async () => {
+  const projects = ($("#zebrafish_projects_csv").value || "").trim();
+  if (!projects) {
+    showError("Please enter at least one zebrafish project ID.");
+    return;
+  }
+  await submitZebrafishStage("/jobs/zebrafish/qc", zebrafishQcBtn);
+});
+
+zebrafishStage1Btn.addEventListener("click", async () => {
+  const qcId = (qcJobIdInput.value || "").trim();
+  const projects = ($("#zebrafish_projects_csv").value || "").trim();
+  if (!qcId && !projects) {
+    showError("Provide a QC Job ID or at least one project ID.");
+    return;
+  }
+  const old = form.querySelector("#selected_stages_csv_hidden");
+  if (old) old.remove();
+  await submitZebrafishStage("/jobs/zebrafish/stage1", zebrafishStage1Btn);
+});
+
+zebrafishStage2Btn.addEventListener("click", async () => {
+  const stage1JobId = (stage1JobIdInput.value || "").trim();
+  if (!stage1JobId) {
+    showError("Please provide a completed Stage 1 job ID.");
+    return;
+  }
+  const selectedStages = Array.from(zebrafishTimepointSelect.selectedOptions).map(o => o.value);
+  if (selectedStages.length) {
+    form.querySelector("#stage1_job_id").value = stage1JobId;
+    const hidden = document.createElement("input");
+    hidden.type = "hidden";
+    hidden.name = "selected_stages_csv";
+    hidden.value = selectedStages.join(",");
+    hidden.id = "selected_stages_csv_hidden";
+    const old = form.querySelector("#selected_stages_csv_hidden");
+    if (old) old.remove();
+    form.appendChild(hidden);
+  } else {
+    const old = form.querySelector("#selected_stages_csv_hidden");
+    if (old) old.remove();
+  }
+  await submitZebrafishStage("/jobs/zebrafish/stage2", zebrafishStage2Btn);
+});
+
+zebrafishFullBtn.addEventListener("click", async () => {
+  await submitZebrafishStage("/jobs/zebrafish/full", zebrafishFullBtn);
+});
+
+zebrafishStage3Btn.addEventListener("click", async () => {
+  const stage1JobId = (stage1JobIdInput.value || "").trim();
+  if (!stage1JobId) {
+    showError("Step 4 requires a completed Stage 1 (alignment) job ID for STAR SJ files.");
+    return;
+  }
+  await submitZebrafishStage("/jobs/zebrafish/stage3", zebrafishStage3Btn);
+});
+
 // --- Cancel / Download ---
 
 cancelBtn.addEventListener("click", async () => {
@@ -563,7 +1303,7 @@ async function loadJobsList() {
     if (!jobs.length) { el.textContent = "No jobs yet."; return; }
     el.innerHTML = jobs.slice(0, 20).map(j => {
       const d = new Date(j.created_at).toLocaleString();
-      return `<div style="padding:4px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+      return `<div class="job-row" data-id="${j.id}" style="padding:4px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background=''">
         <span><code style="font-size:0.8rem;">${j.id.substring(0,8)}...</code> &middot; ${j.mode} &middot; ${d}</span>
         <span style="display:flex; align-items:center; gap:8px;">
           <span class="status-badge status-${j.status}" style="font-size:0.7rem;">${j.status}</span>
@@ -571,8 +1311,15 @@ async function loadJobsList() {
         </span>
       </div>`;
     }).join("");
+    el.querySelectorAll(".job-row").forEach(row => {
+      row.addEventListener("click", (e) => {
+        if (e.target.closest(".job-delete-btn")) return;
+        openJob(row.dataset.id);
+      });
+    });
     el.querySelectorAll(".job-delete-btn").forEach(btn => {
-      btn.addEventListener("click", async () => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
         if (!confirm("Delete this job and its data?")) return;
         btn.disabled = true;
         try {
@@ -584,6 +1331,56 @@ async function loadJobsList() {
   } catch (_) { el.textContent = "Could not load jobs."; }
 }
 loadJobsList();
+
+const PERSIST_FIELDS = [
+  "mode", "quest_user", "quest_host", "quest_account", "quest_partition",
+  "remote_repo_root", "remote_work_root", "remote_juncfiles",
+  "qc_job_id", "stage1_job_id", "stage2_job_id",
+  "zebrafish_pe_list", "zebrafish_longorf_tsv",
+  "zebrafish_genome_fasta", "zebrafish_gencode_gtf",
+  "zebrafish_gene_type_tag", "zebrafish_transcript_type_tag",
+  "zebrafish_gene_name_tag", "zebrafish_transcript_name_tag",
+  "zebrafish_star_threads", "prefix", "min_reads", "max_intron_len"
+];
+const LS_KEY = "lc2_settings";
+
+function loadPersistedSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+    const oldGtfs = ["refs/Danio_rerio.GRCz11.115.gtf", "refs/Danio_rerio.GRCz11.115.ucsc.gtf"];
+    if (oldGtfs.includes(saved["zebrafish_gencode_gtf"])) {
+      saved["zebrafish_gencode_gtf"] = "refs/GRCz12tu.ucsc.gtf";
+    }
+    if (saved["zebrafish_genome_fasta"] === "refs/danRer11.fa") {
+      saved["zebrafish_genome_fasta"] = "refs/GRCz12tu.fa";
+    }
+    PERSIST_FIELDS.forEach(id => {
+      if (saved[id] != null) {
+        const el = document.getElementById(id);
+        if (el) el.value = saved[id];
+      }
+    });
+  } catch (_) {}
+}
+
+function savePersistedSettings() {
+  const data = {};
+  PERSIST_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch (_) {}
+}
+
+loadPersistedSettings();
+updateModeUI();
+updateSourceUI();
+
+PERSIST_FIELDS.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("change", savePersistedSettings);
+  if (el) el.addEventListener("input", savePersistedSettings);
+});
 
 $("#clear-all-btn").addEventListener("click", async () => {
   if (!confirm("Delete ALL jobs and their data (local + remote)?")) return;

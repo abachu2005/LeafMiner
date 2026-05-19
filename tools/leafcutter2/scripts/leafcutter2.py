@@ -1020,7 +1020,9 @@ def get_numers(options):
 
 
 def pick_sjc_label(df):
-    '''Pick one label for each intron based on priroty'''
+    '''Pick one label for each intron based on priority'''
+    if len(df) == 0:
+        return df.iloc[:0].drop(columns='priority', errors='ignore')
     sjc_priority = {'PR': 1, 'UP': 2, 'NE':3} # PR > UP > NE
     df['priority'] = df['SJClass'].map(sjc_priority)
     chosen = df.sort_values(by = 'priority', ascending = True).iloc[0]
@@ -1090,8 +1092,8 @@ def merge_discordant_logics(sjc_file: str):
                               ]].astype(int).astype(str).agg(''.join, axis=1).map(classifer_3bits)
         
         # if multiple classifications, take the one with highest priority
-        sjc = sjc.groupby(['Intron_coord', 'Strand'])[['Intron_coord', 'Strand', 'SJClass', 'Gene_name']].apply(pick_sjc_label).reset_index(drop=True)
-        sjc = sjc[['Intron_coord', 'Strand', 'SJClass', 'Gene_name']]
+        sjc = sjc.groupby('Intron_coord')[['Intron_coord', 'SJClass', 'Gene_name']].apply(pick_sjc_label).reset_index(drop=True)
+        sjc = sjc[['Intron_coord', 'SJClass', 'Gene_name']]
 
         # convert df to dict
         sjc = sjc.set_index('Intron_coord').to_dict(orient='index')
@@ -1203,25 +1205,37 @@ def annotate_noisy(options):
         strand = clu.split("_")[-1]
 
         # check if Strand is in sjc keys:
-        if len(list(sjc.keys())[0]) == 4:
+        if not sjc:
             intronid = chrom, int(s), int(e), strand
-        elif len(list(sjc.keys())[0]) == 3:
+        elif len(next(iter(sjc))) == 4:
+            intronid = chrom, int(s), int(e), strand
+        elif len(next(iter(sjc))) == 3:
             intronid = chrom, int(s), int(e)
+        else:
+            intronid = chrom, int(s), int(e), strand
 
         fractions = [x.split("/") for x in ln[1:]]
         usages = [int(f[0]) / (float(f[1]) + 0.1) for f in fractions] # intron usage ratios
         reads = [int(f[0]) for f in fractions]  # numerators
-        sdreads = stdev(reads)  # standard deviation of read counts across samples
+        sdreads = stdev(reads) if len(reads) >= 2 else 0.0
 
         # remove intron if read count SD < 0.5 and usage ratios are all 0
         if sum(usages) == 0 or sdreads < minreadstd:
             N_skipped_introns += 1
             continue
 
-        # annotate using custom classification
+        # annotate using custom classification;
+        # for unstranded junctions (strand '.'), try both '+' and '-'
+        classification = None
         if intronid in sjc:
             classification = sjc[intronid]["SJClass"]
-        else:
+        elif strand == '.' and len(next(iter(sjc), ())) == 4:
+            for try_strand in ('+', '-'):
+                alt_id = chrom, int(s), int(e), try_strand
+                if alt_id in sjc:
+                    classification = sjc[alt_id]["SJClass"]
+                    break
+        if classification is None:
             classification = "IN"  # IN: INtergenic
 
         # add class flag and write to *_perind.noise_by_intron.gz, eg: 'chr1:825552:829002:clu_1_+:F 1/14 0/25 1/33 1/14 1/33'
@@ -1522,13 +1536,20 @@ if __name__ == "__main__":
 
     if not options.keeptemp:
         sys.stderr.write("Remove generated temp files... \n")
-        with open(os.path.join(options.rundir, options.outprefix) + "_sortedlibs") as f:
-            for tmp in [ln.strip() for ln in f.readlines()]:
-                os.remove(tmp)
-        os.remove(os.path.join(options.rundir, options.outprefix) + "_sortedlibs")
+        sortedlibs = os.path.join(options.rundir, options.outprefix) + "_sortedlibs"
+        if os.path.exists(sortedlibs):
+            with open(sortedlibs) as f:
+                for tmp in [ln.strip() for ln in f.readlines()]:
+                    if os.path.exists(tmp):
+                        os.remove(tmp)
+            os.remove(sortedlibs)
         if options.cluster == None:
-            os.remove(f"{options.rundir}/clustering/{options.outprefix}_pooled")
-            os.remove(f"{options.rundir}/clustering/{options.outprefix}_refined")
+            for _tmp in [
+                f"{options.rundir}/clustering/{options.outprefix}_pooled",
+                f"{options.rundir}/clustering/{options.outprefix}_refined",
+            ]:
+                if os.path.exists(_tmp):
+                    os.remove(_tmp)
         sys.stderr.write(f"\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} Done.\n")
         
     if (options.annot == None) or (options.genome == None):
@@ -1540,8 +1561,12 @@ if __name__ == "__main__":
         
         if not options.keepleafcutter1:
             sys.stderr.write("Remove generated LeafCutter1 files... \n")
-            os.remove(os.path.join(options.rundir, options.outprefix) + "_perind.counts.gz")
-            os.remove(os.path.join(options.rundir, options.outprefix) + "_perind_numers.counts.gz")
+            for _lc1 in [
+                os.path.join(options.rundir, options.outprefix) + "_perind.counts.gz",
+                os.path.join(options.rundir, options.outprefix) + "_perind_numers.counts.gz",
+            ]:
+                if os.path.exists(_lc1):
+                    os.remove(_lc1)
             sys.stderr.write(f"\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} Done.\n")
         else:
             os.makedirs(os.path.join(options.rundir, "leafcutter1_files"), exist_ok=True)

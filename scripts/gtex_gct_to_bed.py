@@ -21,7 +21,6 @@ Outputs:
     <outdir>/junction_files.txt                (list of all BED paths)
 """
 
-from __future__ import annotations
 
 import argparse
 import gzip
@@ -157,7 +156,10 @@ def main() -> None:
                 keep_sample_ids.append(sid)
 
         if not keep_col_indices:
-            raise SystemExit(f"No samples matched tissues {requested}")
+            print(f"[WARN] No samples matched tissues {requested} — writing empty filelist")
+            filelist = outdir / "junction_files.txt"
+            filelist.write_text("")
+            return
         cap_msg = f" (capped at {max_per_tissue}/tissue)" if max_per_tissue > 0 else ""
         print(f"[FILTER] {len(keep_col_indices):,} samples match{cap_msg}")
         for t, c in sorted(tissue_counts.items()):

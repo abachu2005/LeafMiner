@@ -18,12 +18,23 @@ junctions_bed/
 junctions_bed_test/
 refs/
 out/
+outputs/
+5 outputs/
 lc2/
 clusters/
 clustering/
 results/
 figures/
 star_sj/
+
+# Runtime/server artifacts
+*.log
+*.pid
+.leafcutter2-server.log
+.leafcutter2-server.pid
+
+# Large TSV data outputs
+*.tsv
 *.gz
 *.bed
 *.bam
