@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "leafcutter2-pipeline"
+version = "1.0.0"
+description = "Reproducible poison-exon discovery pipeline for zebrafish (and other organisms) wrapping LeafCutter2."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Abhinav Bachu" }]
+requires-python = ">=3.9"
+keywords = ["bioinformatics", "splicing", "poison-exons", "zebrafish", "leafcutter", "RNA-seq"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+    "fastapi>=0.104",
+    "uvicorn[standard]>=0.24",
+    "python-multipart>=0.0.6",
+    "numpy>=1.22",
+    "pandas>=1.4",
+    "matplotlib>=3.5",
+    "scipy>=1.9",
+    "requests>=2.28",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "pytest-cov>=4",
+    "ruff>=0.4",
+    "pre-commit>=3",
+    "httpx>=0.27",
+]
+
+[project.urls]
+Homepage = "https://github.com/abachu2005/Leaf_Cutter"
+Repository = "https://github.com/abachu2005/Leaf_Cutter"
+Issues = "https://github.com/abachu2005/Leaf_Cutter/issues"
+Changelog = "https://github.com/abachu2005/Leaf_Cutter/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+py-modules = []
+packages = []
+include-package-data = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+extend-exclude = ["tools/leafcutter", "tools/leafcutter2"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501", "E741", "E402"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["E", "F", "W", "I"]   # research scripts; lint exempted
+"tools/*" = ["E", "F", "W", "I"]
+"webapp/backend/main.py" = ["E", "F", "W", "I"]   # large legacy file; will refactor later
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"

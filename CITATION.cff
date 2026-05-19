@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+title: "Leaf_Cutter: a reproducible poison-exon discovery pipeline for zebrafish"
+message: "If you use this software, please cite it using the metadata below."
+type: software
+authors:
+  - family-names: Bachu
+    given-names: Abhinav
+repository-code: "https://github.com/abachu2005/Leaf_Cutter"
+url: "https://github.com/abachu2005/Leaf_Cutter"
+abstract: >-
+  Leaf_Cutter is an open-source, end-to-end pipeline for discovering and
+  quantifying unproductive splicing and poison exons in Danio rerio
+  RNA-seq data. It wraps LeafCutter2 with developmentally-resolved PE
+  discovery, POISEN long-read validation, GTEx integration, and a
+  FastAPI + vanilla-JS web app with optional Slurm submission.
+keywords:
+  - bioinformatics
+  - splicing
+  - poison-exons
+  - zebrafish
+  - leafcutter
+  - nonsense-mediated-decay
+license: MIT
+version: "1.0.0"
+date-released: "2026-05-19"
+references:
+  - type: article
+    title: "Leafcutter2: differential splicing and characterization of unproductive splicing"
+    authors:
+      - family-names: Li
+        given-names: Yang
+      - family-names: Dai
+        given-names: Chao
+    year: 2024
+    notes: "Upstream tool that Leaf_Cutter wraps and extends."
