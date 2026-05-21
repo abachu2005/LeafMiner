@@ -55,3 +55,4 @@ Thumbs.db
 
 # PDF docs (large)
 *.pdf
+dist/

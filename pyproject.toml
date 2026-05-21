@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "leafcutter2-pipeline"
-version = "1.0.1"
+version = "1.0.2"
 description = "Reproducible poison-exon discovery pipeline for zebrafish (and other organisms) wrapping LeafCutter2."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -32,7 +32,12 @@ dependencies = [
     "matplotlib>=3.5",
     "scipy>=1.9",
     "requests>=2.28",
+    "tqdm>=4.64",
 ]
+
+[project.scripts]
+leafcutter2-pipeline = "scripts.lc2_pipeline:main"
+leafcutter2-web = "webapp.backend.main:main"
 
 [project.optional-dependencies]
 dev = [
@@ -50,9 +55,11 @@ Issues = "https://github.com/abachu2005/Leaf_Cutter/issues"
 Changelog = "https://github.com/abachu2005/Leaf_Cutter/blob/main/CHANGELOG.md"
 
 [tool.setuptools]
-py-modules = []
-packages = []
+packages = ["scripts", "webapp", "webapp.backend"]
 include-package-data = true
+
+[tool.setuptools.package-data]
+webapp = ["frontend/*", "frontend/**/*"]
 
 [tool.ruff]
 line-length = 120

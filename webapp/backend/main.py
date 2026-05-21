@@ -2951,3 +2951,17 @@ def delete_all_jobs() -> JSONResponse:
         except Exception:
             pass
     return JSONResponse({"deleted": deleted, "total": len(rows)})
+
+
+def main() -> None:
+    """Console entry point: launch the LeafCutter2 web UI via uvicorn."""
+    import os
+    import uvicorn
+
+    host = os.environ.get("LEAFCUTTER2_HOST", "127.0.0.1")
+    port = int(os.environ.get("LEAFCUTTER2_PORT", "8000"))
+    uvicorn.run("webapp.backend.main:app", host=host, port=port, reload=False)
+
+
+if __name__ == "__main__":
+    main()
