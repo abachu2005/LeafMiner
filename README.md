@@ -1,6 +1,6 @@
-# Leaf_Cutter — A Reproducible Poison-Exon Discovery Pipeline for Zebrafish (and Beyond)
+# LeafMiner — A Reproducible Poison-Exon Discovery Pipeline for Zebrafish (and Beyond)
 
-> An open-source, end-to-end pipeline for discovering and quantifying
+> **LeafMiner** (source repo: [`Leaf_Cutter`](https://github.com/abachu2005/Leaf_Cutter)) is an open-source, end-to-end pipeline for discovering and quantifying
 > **unproductive splicing** and **poison exons** in *Danio rerio* RNA-seq
 > data — from raw FASTQs on ENA to a ranked, NMD-annotated, statistically
 > tested candidate list, all driven from a browser tab or a single CLI

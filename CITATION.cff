@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "Leaf_Cutter: a reproducible poison-exon discovery pipeline for zebrafish"
+title: "LeafMiner: a reproducible poison-exon discovery pipeline for zebrafish"
 message: "If you use this software, please cite it using the metadata below."
 type: software
 authors:
@@ -13,16 +13,18 @@ identifiers:
     value: "10.5281/zenodo.20297751"
     description: "Concept DOI (always resolves to the latest release)"
 abstract: >-
-  Leaf_Cutter is an open-source, end-to-end pipeline for discovering and
+  LeafMiner is an open-source, end-to-end pipeline for discovering and
   quantifying unproductive splicing and poison exons in Danio rerio
   RNA-seq data. It wraps LeafCutter2 with developmentally-resolved PE
   discovery, POISEN long-read validation, GTEx integration, and a
-  FastAPI + vanilla-JS web app with optional Slurm submission.
+  FastAPI + vanilla-JS web app with optional Slurm submission. Source
+  code is maintained in the Leaf_Cutter GitHub repository.
 keywords:
   - bioinformatics
   - splicing
   - poison-exons
   - zebrafish
+  - leafminer
   - leafcutter
   - nonsense-mediated-decay
 license: MIT
@@ -37,4 +39,4 @@ references:
       - family-names: Dai
         given-names: Chao
     year: 2024
-    notes: "Upstream tool that Leaf_Cutter wraps and extends."
+    notes: "Upstream tool that LeafMiner wraps and extends."
