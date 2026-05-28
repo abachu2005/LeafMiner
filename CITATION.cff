@@ -1,12 +1,19 @@
-cff-version: 1.2.0
+cff-version: 1.3.0
 title: "LeafMiner: a reproducible poison-exon discovery pipeline for zebrafish"
 message: "If you use this software, please cite it using the metadata below."
 type: software
 authors:
   - family-names: Bachu
     given-names: Abhinav
-repository-code: "https://github.com/abachu2005/Leaf_Cutter"
-url: "https://github.com/abachu2005/Leaf_Cutter"
+    affiliation: Northwestern University Feinberg School of Medicine
+contributors:
+  - family-names: Parvez
+    given-names: Saba
+    affiliation: Northwestern University Feinberg School of Medicine
+    roles:
+      - supervisor
+repository-code: "https://github.com/abachu2005/LeafMiner"
+url: "https://github.com/abachu2005/LeafMiner"
 doi: "10.5281/zenodo.20297751"
 identifiers:
   - type: doi
@@ -17,8 +24,7 @@ abstract: >-
   quantifying unproductive splicing and poison exons in Danio rerio
   RNA-seq data. It wraps LeafCutter2 with developmentally-resolved PE
   discovery, POISEN long-read validation, GTEx integration, and a
-  FastAPI + vanilla-JS web app with optional Slurm submission. Source
-  code is maintained in the Leaf_Cutter GitHub repository.
+  FastAPI + vanilla-JS web app with optional Slurm submission.
 keywords:
   - bioinformatics
   - splicing

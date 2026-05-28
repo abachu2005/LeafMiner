@@ -504,10 +504,15 @@ PRs are welcome. The most useful contributions right now are:
 
 ---
 
+## Contributors
+
+Developed by **Abhinav Bachu** (Northwestern University Feinberg School of Medicine). Supervised by **Saba Parvez** (Northwestern University Feinberg School of Medicine).
+
 ## 10. Acknowledgements
 
 This work would not exist without:
 
+- **Saba Parvez** (Northwestern University Feinberg School of Medicine) — research supervisor.
 - **Saba Tabatabaee** for the PE-inclusion specification and the POISEN
   long-read PE catalogue.
 - **Talha** for the LongORF/PTC+ NMD-transcript catalogue.
