@@ -1,0 +1,13 @@
+{
+  "run_name": "run2_grcz12_longorf",
+  "run_id": "c6ec0f90-9a03-436d-9d36-201e5d35575e",
+  "remote_run_dir": "/projects/p52853/iis1026/Leaf_Cutter/jobs/c6ec0f90-9a03-436d-9d36-201e5d35575e",
+  "reuse_stage1": "/projects/p52853/iis1026/Leaf_Cutter/jobs/1c0556db-a2af-44e9-86d4-45e9c40bf49b",
+  "genome_fasta": "refs/GRCz12tu.fa",
+  "gencode_gtf": "refs/GRCz12tu.ucsc.longorf.gtf",
+  "chain_jids": {
+    "stage2": "6654288",
+    "stage3": "6654295"
+  },
+  "dry_run": false
+}

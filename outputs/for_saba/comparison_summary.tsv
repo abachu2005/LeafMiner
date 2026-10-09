@@ -1,0 +1,7 @@
+metric	run1_grcz12_stock_baseline	run2_grcz12_longorf	run3_grcz11_stock
+n_events_in_psi	1936	1936	1936
+n_events_passing_all_filters	23	23	0
+n_pe_events_tested	2	2	0
+n_candidates	1936	1936	1936
+n_significant_spearman	1	1	0
+n_significant_dpsi	0	0	0

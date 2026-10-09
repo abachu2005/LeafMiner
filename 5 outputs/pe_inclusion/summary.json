@@ -1,0 +1,29 @@
+{
+  "stage": "stage3_pe_inclusion",
+  "parameters": {
+    "pe_list": "UPDATED_STRAND_POISEN_HITS.tsv",
+    "sj_dir": null,
+    "sj_list": null,
+    "samples_tsv": null,
+    "longorf_tsv": "LongORF_PTC+_fromClustered.tsv",
+    "lc2_classifications": null,
+    "lc2_cluster_ratios": null,
+    "outdir": "5 outputs/pe_inclusion",
+    "min_junction_reads": 3,
+    "min_locus_reads": 10,
+    "max_intron_len": 500000,
+    "ds": false,
+    "leafcutter_repo": null,
+    "ds_workdir": null,
+    "note": "events_only"
+  },
+  "stage_a": {
+    "n_input_rows": 6149,
+    "n_unique_events": 1936,
+    "n_dropped_no_chain": 0,
+    "n_dropped_pe_not_in_chain": 0,
+    "n_dropped_terminal_exon": 0,
+    "n_dropped_chrom_mismatch": 0
+  },
+  "n_sj_files": 0
+}

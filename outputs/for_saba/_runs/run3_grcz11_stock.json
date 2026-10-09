@@ -1,0 +1,13 @@
+{
+  "run_name": "run3_grcz11_stock",
+  "run_id": "8e56d39b-2e33-4cd1-943c-0b7c3b6bb1c8",
+  "remote_run_dir": "/projects/p52853/iis1026/Leaf_Cutter/jobs/8e56d39b-2e33-4cd1-943c-0b7c3b6bb1c8",
+  "reuse_stage1": "/projects/p52853/iis1026/Leaf_Cutter/jobs/e2a7de06-3a55-45e4-a3f1-44cb9ae841d5",
+  "genome_fasta": "refs/danRer11.fa",
+  "gencode_gtf": "refs/Danio_rerio.GRCz11.115.ucsc.gtf",
+  "chain_jids": {
+    "stage2": "6717964",
+    "stage3": "6717965"
+  },
+  "dry_run": false
+}

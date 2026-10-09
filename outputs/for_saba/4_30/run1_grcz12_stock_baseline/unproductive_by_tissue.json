@@ -1,0 +1,64 @@
+{
+  "n_tissues": 6,
+  "n_samples": 276,
+  "global_weighted_mean_pct": 0.3066,
+  "global_median_pct": 0.2913,
+  "tissues": [
+    {
+      "tissue": "24hpf",
+      "n_samples": 46,
+      "mean_pct": 0.3279,
+      "median_pct": 0.3368,
+      "std_pct": 0.0573,
+      "total_reads": 3915179,
+      "unproductive_reads": 12750
+    },
+    {
+      "tissue": "30hpf",
+      "n_samples": 46,
+      "mean_pct": 0.331,
+      "median_pct": 0.3288,
+      "std_pct": 0.0692,
+      "total_reads": 3728461,
+      "unproductive_reads": 12412
+    },
+    {
+      "tissue": "48hpf",
+      "n_samples": 46,
+      "mean_pct": 0.2768,
+      "median_pct": 0.268,
+      "std_pct": 0.0801,
+      "total_reads": 2412201,
+      "unproductive_reads": 6592
+    },
+    {
+      "tissue": "4dpf",
+      "n_samples": 46,
+      "mean_pct": 0.2643,
+      "median_pct": 0.2622,
+      "std_pct": 0.0441,
+      "total_reads": 1510523,
+      "unproductive_reads": 3971
+    },
+    {
+      "tissue": "5dpf",
+      "n_samples": 46,
+      "mean_pct": 0.2749,
+      "median_pct": 0.2681,
+      "std_pct": 0.0455,
+      "total_reads": 1256965,
+      "unproductive_reads": 3459
+    },
+    {
+      "tissue": "72hpf",
+      "n_samples": 46,
+      "mean_pct": 0.3141,
+      "median_pct": 0.3124,
+      "std_pct": 0.0519,
+      "total_reads": 1861484,
+      "unproductive_reads": 5841
+    }
+  ],
+  "spearman_rho": -0.8286,
+  "spearman_p": 0.0416
+}
